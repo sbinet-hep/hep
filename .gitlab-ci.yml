@@ -1,0 +1,33 @@
+before_script:
+ - apt-get update -y -qq
+ - apt-get install -qq pkg-config kmod fuse
+ ## - modprobe fuse
+ ## - chmod 666 /dev/fuse
+ ## - chown root:$USER /etc/fuse.conf
+ ## - export GOPATH=$(pwd)
+ ## - export PATH=${GOPATH}/bin:${PATH}
+ - export GOPATH=/go
+ - export PATH=${GOPATH}/bin:${PATH}
+ - cd $GOPATH
+ - mkdir -p $GOPATH/src/go-hep.org/x
+ - ln -s /builds/go-hep/hep $GOPATH/src/go-hep.org/x/hep
+ - cd $GOPATH/src/go-hep.org/x/hep
+ - go get -d -t ./...
+
+stages:
+ - build
+
+go-1.11:
+ image: golang:1.11
+ stage: build
+ script:
+  - go install -v ./...
+  - go run ./ci/run-tests.go -v -race
+
+## go-master:
+##  image: golang:master
+##  stage: build
+##  script:
+##   - export GO111MODULE=on
+##   - go install -v ./...
+##   - go run ./ci/run-tests.go -v
