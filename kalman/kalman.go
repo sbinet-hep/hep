@@ -1,8 +1,14 @@
+// Copyright 2018 The go-hep Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package kalman
 
+// biblio:
+//  - https://www.uzh.ch/cmsssl/physik/dam/jcr:e705cebf-c99d-4651-9a78-761a9f96c66c/empp15_OS_reco.pdf
+//  - http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.57.1034&rep=rep1&type=pdf
+
 import (
-	"fmt"
-	"log"
 	"math"
 
 	"github.com/pkg/errors"
@@ -13,105 +19,6 @@ var (
 	errNotSquare = errors.New("kalman: non-square matrix")
 	errMismatch  = errors.New("kalman: dimension mismatch")
 )
-
-// Filter provides a Kalman filter.
-type Filter struct {
-	c  *mat.Dense // Output matrix
-	q  *mat.Dense // Process noise covariance
-	r  *mat.Dense // Measurement noise covariance
-	p  *mat.Dense // Estimate error covariance
-	k  *mat.Dense
-	p0 *mat.Dense
-
-	m, n int // dimensions of the system
-
-	t0, t float64 // initial and current time
-	dt    float64 // discrete time step
-
-	x, xn *mat.VecDense
-
-	id *mat.Dense
-}
-
-func New(dt float64, c, q, r, p *mat.Dense) *Filter {
-	m, n := c.Dims()
-
-	return &Filter{
-		c:  c,
-		q:  q,
-		r:  r,
-		p0: p,
-		m:  m,
-		n:  n,
-		dt: dt,
-		id: newIdentity(n),
-	}
-}
-
-func (kf *Filter) State() *mat.VecDense {
-	return kf.x
-}
-
-func (kf *Filter) Init(t0 float64, x0 *mat.VecDense) {
-	kf.x = x0
-	kf.xn = mat.NewVecDense(kf.n, nil)
-	kf.p = kf.p0
-	kf.t0 = t0
-	kf.t = t0
-}
-
-// Update updates the Kalman filter.
-// a: System dynamics matrix
-func (kf *Filter) Update(y *mat.VecDense, dt float64, a *mat.Dense) error {
-	if kf.x == nil {
-		panic("kalman: filter not initialized")
-	}
-
-	kf.dt = dt
-
-	kf.xn.MulVec(a, kf.x)
-	kf.p.Mul(a, kf.p)
-	kf.p.Mul(kf.p, a.T())
-	kf.p.Add(kf.p, kf.q)
-
-	ct := kf.c.T()
-	var k mat.Dense
-	log.Printf(">>> c: %v", dimsOf(kf.c))
-	log.Printf(">>> p: %v", dimsOf(kf.p))
-	log.Printf(">>> ct:%v", dimsOf(ct))
-	k.Mul(kf.c, kf.p)
-	log.Printf(">>> k: %v", dimsOf(&k))
-	k.Mul(&k, ct)
-	k.Add(&k, kf.r)
-	var kinv mat.Dense
-	err := kinv.Inverse(&k)
-	if err != nil {
-		return err
-	}
-
-	k.Product(kf.p, ct, &k)
-	var tmp mat.VecDense
-	tmp.MulVec(kf.c, kf.xn)
-	tmp.SubVec(y, &tmp)
-	tmp.MulVec(&k, &tmp)
-
-	kf.xn.AddVec(kf.xn, &tmp)
-
-	var m mat.Dense
-	m.Mul(&k, kf.c)
-	m.Sub(kf.id, &m)
-
-	kf.p.Mul(&m, kf.p)
-
-	kf.t += dt
-
-	return nil
-}
-
-func dimsOf(m mat.Matrix) string {
-	r, c := m.Dims()
-	return fmt.Sprintf("(%d, %d)", r, c)
-}
 
 func newIdentity(n int) *mat.Dense {
 	if n <= 0 {
@@ -238,7 +145,7 @@ func (kf *KF) Filter(out, sys *mat.Dense) (*mat.Dense, error) {
 		di0.Mul(kf.H, kf.v)
 		di.Mul(&di0, ht)
 		di.Add(&di, kf.R)
-		err := di.Inverse(&di) // FIXME(sbinet): not stable.
+		err := di.Inverse(&di) // FIXME(sbinet): not numerically stable.
 		if err != nil {
 			return nil, err
 		}
