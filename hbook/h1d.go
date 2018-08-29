@@ -428,9 +428,9 @@ scanLoop:
 			_, err = fmt.Fscanf(
 				rbuf,
 				"Total   \tTotal   \t%e\t%e\t%e\t%e\t%d\n",
-				&d.dist.sumW, &d.dist.sumW2,
+				&d.dist.SumW, &d.dist.sumW2,
 				&d.sumWX, &d.sumWX2,
-				&d.dist.n,
+				&d.dist.N,
 			)
 			if err != nil {
 				return fmt.Errorf("hbook: %v\nhbook: %q", err, string(buf))
@@ -441,9 +441,9 @@ scanLoop:
 			_, err = fmt.Fscanf(
 				rbuf,
 				"Underflow\tUnderflow\t%e\t%e\t%e\t%e\t%d\n",
-				&d.dist.sumW, &d.dist.sumW2,
+				&d.dist.SumW, &d.dist.sumW2,
 				&d.sumWX, &d.sumWX2,
-				&d.dist.n,
+				&d.dist.N,
 			)
 			if err != nil {
 				return fmt.Errorf("hbook: %v\nhbook: %q", err, string(buf))
@@ -454,9 +454,9 @@ scanLoop:
 			_, err = fmt.Fscanf(
 				rbuf,
 				"Overflow\tOverflow\t%e\t%e\t%e\t%e\t%d\n",
-				&d.dist.sumW, &d.dist.sumW2,
+				&d.dist.SumW, &d.dist.sumW2,
 				&d.sumWX, &d.sumWX2,
-				&d.dist.n,
+				&d.dist.N,
 			)
 			if err != nil {
 				return fmt.Errorf("hbook: %v\nhbook: %q", err, string(buf))
@@ -469,9 +469,9 @@ scanLoop:
 				rbuf,
 				"%e\t%e\t%e\t%e\t%e\t%e\t%d\n",
 				&bin.xrange.Min, &bin.xrange.Max,
-				&d.dist.sumW, &d.dist.sumW2,
+				&d.dist.SumW, &d.dist.sumW2,
 				&d.sumWX, &d.sumWX2,
-				&d.dist.n,
+				&d.dist.N,
 			)
 			if err != nil {
 				return fmt.Errorf("hbook: %v\nhbook: %q", err, string(buf))

@@ -329,12 +329,12 @@ func (o *BinP1D) UnmarshalBinary(data []byte) (err error) {
 }
 
 // MarshalBinary implements encoding.BinaryMarshaler
-func (o *binning2D) MarshalBinary() (data []byte, err error) {
+func (o *Binning2D) MarshalBinary() (data []byte, err error) {
 	var buf [8]byte
-	binary.LittleEndian.PutUint64(buf[:8], uint64(len(o.bins)))
+	binary.LittleEndian.PutUint64(buf[:8], uint64(len(o.Bins)))
 	data = append(data, buf[:8]...)
-	for i := range o.bins {
-		o := &o.bins[i]
+	for i := range o.Bins {
+		o := &o.Bins[i]
 		{
 			sub, err := o.MarshalBinary()
 			if err != nil {
@@ -346,7 +346,7 @@ func (o *binning2D) MarshalBinary() (data []byte, err error) {
 		}
 	}
 	{
-		sub, err := o.dist.MarshalBinary()
+		sub, err := o.Dist.MarshalBinary()
 		if err != nil {
 			return nil, err
 		}
@@ -354,8 +354,8 @@ func (o *binning2D) MarshalBinary() (data []byte, err error) {
 		data = append(data, buf[:8]...)
 		data = append(data, sub...)
 	}
-	for i := range o.outflows {
-		o := &o.outflows[i]
+	for i := range o.Outflows {
+		o := &o.Outflows[i]
 		{
 			sub, err := o.MarshalBinary()
 			if err != nil {
@@ -367,7 +367,7 @@ func (o *binning2D) MarshalBinary() (data []byte, err error) {
 		}
 	}
 	{
-		sub, err := o.xrange.MarshalBinary()
+		sub, err := o.XRange.MarshalBinary()
 		if err != nil {
 			return nil, err
 		}
@@ -376,7 +376,7 @@ func (o *binning2D) MarshalBinary() (data []byte, err error) {
 		data = append(data, sub...)
 	}
 	{
-		sub, err := o.yrange.MarshalBinary()
+		sub, err := o.YRange.MarshalBinary()
 		if err != nil {
 			return nil, err
 		}
@@ -384,14 +384,14 @@ func (o *binning2D) MarshalBinary() (data []byte, err error) {
 		data = append(data, buf[:8]...)
 		data = append(data, sub...)
 	}
-	binary.LittleEndian.PutUint64(buf[:8], uint64(o.nx))
+	binary.LittleEndian.PutUint64(buf[:8], uint64(o.Nx))
 	data = append(data, buf[:8]...)
-	binary.LittleEndian.PutUint64(buf[:8], uint64(o.ny))
+	binary.LittleEndian.PutUint64(buf[:8], uint64(o.Ny))
 	data = append(data, buf[:8]...)
-	binary.LittleEndian.PutUint64(buf[:8], uint64(len(o.xedges)))
+	binary.LittleEndian.PutUint64(buf[:8], uint64(len(o.XEdges)))
 	data = append(data, buf[:8]...)
-	for i := range o.xedges {
-		o := &o.xedges[i]
+	for i := range o.XEdges {
+		o := &o.XEdges[i]
 		{
 			sub, err := o.MarshalBinary()
 			if err != nil {
@@ -402,10 +402,10 @@ func (o *binning2D) MarshalBinary() (data []byte, err error) {
 			data = append(data, sub...)
 		}
 	}
-	binary.LittleEndian.PutUint64(buf[:8], uint64(len(o.yedges)))
+	binary.LittleEndian.PutUint64(buf[:8], uint64(len(o.YEdges)))
 	data = append(data, buf[:8]...)
-	for i := range o.yedges {
-		o := &o.yedges[i]
+	for i := range o.YEdges {
+		o := &o.YEdges[i]
 		{
 			sub, err := o.MarshalBinary()
 			if err != nil {
@@ -420,13 +420,13 @@ func (o *binning2D) MarshalBinary() (data []byte, err error) {
 }
 
 // UnmarshalBinary implements encoding.BinaryUnmarshaler
-func (o *binning2D) UnmarshalBinary(data []byte) (err error) {
+func (o *Binning2D) UnmarshalBinary(data []byte) (err error) {
 	{
 		n := int(binary.LittleEndian.Uint64(data[:8]))
-		o.bins = make([]Bin2D, n)
+		o.Bins = make([]Bin2D, n)
 		data = data[8:]
-		for i := range o.bins {
-			oi := &o.bins[i]
+		for i := range o.Bins {
+			oi := &o.Bins[i]
 			{
 				n := int(binary.LittleEndian.Uint64(data[:8]))
 				data = data[8:]
@@ -441,14 +441,14 @@ func (o *binning2D) UnmarshalBinary(data []byte) (err error) {
 	{
 		n := int(binary.LittleEndian.Uint64(data[:8]))
 		data = data[8:]
-		err = o.dist.UnmarshalBinary(data[:n])
+		err = o.Dist.UnmarshalBinary(data[:n])
 		if err != nil {
 			return err
 		}
 		data = data[n:]
 	}
-	for i := range o.outflows {
-		oi := &o.outflows[i]
+	for i := range o.Outflows {
+		oi := &o.Outflows[i]
 		{
 			n := int(binary.LittleEndian.Uint64(data[:8]))
 			data = data[8:]
@@ -462,7 +462,7 @@ func (o *binning2D) UnmarshalBinary(data []byte) (err error) {
 	{
 		n := int(binary.LittleEndian.Uint64(data[:8]))
 		data = data[8:]
-		err = o.xrange.UnmarshalBinary(data[:n])
+		err = o.XRange.UnmarshalBinary(data[:n])
 		if err != nil {
 			return err
 		}
@@ -471,22 +471,22 @@ func (o *binning2D) UnmarshalBinary(data []byte) (err error) {
 	{
 		n := int(binary.LittleEndian.Uint64(data[:8]))
 		data = data[8:]
-		err = o.yrange.UnmarshalBinary(data[:n])
+		err = o.YRange.UnmarshalBinary(data[:n])
 		if err != nil {
 			return err
 		}
 		data = data[n:]
 	}
-	o.nx = int(binary.LittleEndian.Uint64(data[:8]))
+	o.Nx = int(binary.LittleEndian.Uint64(data[:8]))
 	data = data[8:]
-	o.ny = int(binary.LittleEndian.Uint64(data[:8]))
+	o.Ny = int(binary.LittleEndian.Uint64(data[:8]))
 	data = data[8:]
 	{
 		n := int(binary.LittleEndian.Uint64(data[:8]))
-		o.xedges = make([]Bin1D, n)
+		o.XEdges = make([]Bin1D, n)
 		data = data[8:]
-		for i := range o.xedges {
-			oi := &o.xedges[i]
+		for i := range o.XEdges {
+			oi := &o.XEdges[i]
 			{
 				n := int(binary.LittleEndian.Uint64(data[:8]))
 				data = data[8:]
@@ -500,10 +500,10 @@ func (o *binning2D) UnmarshalBinary(data []byte) (err error) {
 	}
 	{
 		n := int(binary.LittleEndian.Uint64(data[:8]))
-		o.yedges = make([]Bin1D, n)
+		o.YEdges = make([]Bin1D, n)
 		data = data[8:]
-		for i := range o.yedges {
-			oi := &o.yedges[i]
+		for i := range o.YEdges {
+			oi := &o.YEdges[i]
 			{
 				n := int(binary.LittleEndian.Uint64(data[:8]))
 				data = data[8:]
@@ -522,7 +522,7 @@ func (o *binning2D) UnmarshalBinary(data []byte) (err error) {
 func (o *Bin2D) MarshalBinary() (data []byte, err error) {
 	var buf [8]byte
 	{
-		sub, err := o.xrange.MarshalBinary()
+		sub, err := o.XRange.MarshalBinary()
 		if err != nil {
 			return nil, err
 		}
@@ -531,7 +531,7 @@ func (o *Bin2D) MarshalBinary() (data []byte, err error) {
 		data = append(data, sub...)
 	}
 	{
-		sub, err := o.yrange.MarshalBinary()
+		sub, err := o.YRange.MarshalBinary()
 		if err != nil {
 			return nil, err
 		}
@@ -540,7 +540,7 @@ func (o *Bin2D) MarshalBinary() (data []byte, err error) {
 		data = append(data, sub...)
 	}
 	{
-		sub, err := o.dist.MarshalBinary()
+		sub, err := o.Dist.MarshalBinary()
 		if err != nil {
 			return nil, err
 		}
@@ -556,7 +556,7 @@ func (o *Bin2D) UnmarshalBinary(data []byte) (err error) {
 	{
 		n := int(binary.LittleEndian.Uint64(data[:8]))
 		data = data[8:]
-		err = o.xrange.UnmarshalBinary(data[:n])
+		err = o.XRange.UnmarshalBinary(data[:n])
 		if err != nil {
 			return err
 		}
@@ -565,7 +565,7 @@ func (o *Bin2D) UnmarshalBinary(data []byte) (err error) {
 	{
 		n := int(binary.LittleEndian.Uint64(data[:8]))
 		data = data[8:]
-		err = o.yrange.UnmarshalBinary(data[:n])
+		err = o.YRange.UnmarshalBinary(data[:n])
 		if err != nil {
 			return err
 		}
@@ -574,7 +574,7 @@ func (o *Bin2D) UnmarshalBinary(data []byte) (err error) {
 	{
 		n := int(binary.LittleEndian.Uint64(data[:8]))
 		data = data[8:]
-		err = o.dist.UnmarshalBinary(data[:n])
+		err = o.Dist.UnmarshalBinary(data[:n])
 		if err != nil {
 			return err
 		}

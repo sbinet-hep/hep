@@ -6,67 +6,67 @@ package hbook
 
 import "math"
 
-// dist0D is a 0-dim distribution.
-type dist0D struct {
-	n     int64   // number of entries
-	sumW  float64 // sum of weights
+// Dist0D is a 0-dim distribution.
+type Dist0D struct {
+	N     int64   // number of entries
+	SumW  float64 // sum of weights
 	sumW2 float64 // sum of squared weights
 }
 
 // Rank returns the number of dimensions of the distribution.
-func (*dist0D) Rank() int {
+func (*Dist0D) Rank() int {
 	return 1
 }
 
 // Entries returns the number of entries in the distribution.
-func (d *dist0D) Entries() int64 {
-	return d.n
+func (d *Dist0D) Entries() int64 {
+	return d.N
 }
 
 // EffEntries returns the number of weighted entries, such as:
 //  (\sum w)^2 / \sum w^2
-func (d *dist0D) EffEntries() float64 {
+func (d *Dist0D) EffEntries() float64 {
 	if d.sumW2 == 0 {
 		return 0
 	}
-	return d.sumW * d.sumW / d.sumW2
+	return d.SumW * d.SumW / d.sumW2
 }
 
-// SumW returns the sum of weights of the distribution.
-func (d *dist0D) SumW() float64 {
-	return d.sumW
+// XXX_SumW returns the sum of weights of the distribution.
+func (d *Dist0D) XXX_SumW() float64 {
+	return d.SumW
 }
 
-// SumW2 returns the sum of squared weights of the distribution.
-func (d *dist0D) SumW2() float64 {
+// XXX_SumW2 returns the sum of squared weights of the distribution.
+func (d *Dist0D) XXX_SumW2() float64 {
 	return d.sumW2
 }
 
 // errW returns the absolute error on sumW()
-func (d *dist0D) errW() float64 {
-	return math.Sqrt(d.SumW2())
+func (d *Dist0D) errW() float64 {
+	return math.Sqrt(d.XXX_SumW2())
 }
 
 // relErrW returns the relative error on sumW()
-func (d *dist0D) relErrW() float64 {
+func (d *Dist0D) relErrW() float64 {
 	// FIXME(sbinet) check for low stats ?
-	return d.errW() / d.SumW()
+	return d.errW() / d.XXX_SumW()
 }
 
-func (d *dist0D) fill(w float64) {
-	d.n++
-	d.sumW += w
+func (d *Dist0D) fill(w float64) {
+	d.N++
+	d.SumW += w
 	d.sumW2 += w * w
 }
 
-func (d *dist0D) scaleW(f float64) {
-	d.sumW *= f
+func (d *Dist0D) scaleW(f float64) {
+	d.SumW *= f
 	d.sumW2 *= f * f
 }
 
 // dist1D is a 1-dim distribution.
 type dist1D struct {
-	dist   dist0D  // weight moments
+	dist   Dist0D  // weight moments
 	sumWX  float64 // 1st order weighted x moment
 	sumWX2 float64 // 2nd order weighted x moment
 }
@@ -88,12 +88,12 @@ func (d *dist1D) EffEntries() float64 {
 
 // SumW returns the sum of weights of the distribution.
 func (d *dist1D) SumW() float64 {
-	return d.dist.SumW()
+	return d.dist.XXX_SumW()
 }
 
 // SumW2 returns the sum of squared weights of the distribution.
 func (d *dist1D) SumW2() float64 {
-	return d.dist.SumW2()
+	return d.dist.XXX_SumW2()
 }
 
 // SumWX returns the 1st order weighted x moment
@@ -171,141 +171,141 @@ func (d *dist1D) scaleX(f float64) {
 	d.sumWX2 *= f * f
 }
 
-// dist2D is a 2-dim distribution.
-type dist2D struct {
-	x      dist1D  // x moments
-	y      dist1D  // y moments
-	sumWXY float64 // 2nd-order cross-term
+// Dist2D is a 2-dim distribution.
+type Dist2D struct {
+	X      dist1D  // x moments
+	Y      dist1D  // y moments
+	SumWXY float64 // 2nd-order cross-term
 }
 
 // Rank returns the number of dimensions of the distribution.
-func (*dist2D) Rank() int {
+func (*Dist2D) Rank() int {
 	return 2
 }
 
 // Entries returns the number of entries in the distribution.
-func (d *dist2D) Entries() int64 {
-	return d.x.Entries()
+func (d *Dist2D) Entries() int64 {
+	return d.X.Entries()
 }
 
 // EffEntries returns the effective number of entries in the distribution.
-func (d *dist2D) EffEntries() float64 {
-	return d.x.EffEntries()
+func (d *Dist2D) EffEntries() float64 {
+	return d.X.EffEntries()
 }
 
 // SumW returns the sum of weights of the distribution.
-func (d *dist2D) SumW() float64 {
-	return d.x.SumW()
+func (d *Dist2D) SumW() float64 {
+	return d.X.SumW()
 }
 
 // SumW2 returns the sum of squared weights of the distribution.
-func (d *dist2D) SumW2() float64 {
-	return d.x.SumW2()
+func (d *Dist2D) SumW2() float64 {
+	return d.X.SumW2()
 }
 
 // SumWX returns the 1st order weighted x moment
-func (d *dist2D) SumWX() float64 {
-	return d.x.SumWX()
+func (d *Dist2D) SumWX() float64 {
+	return d.X.SumWX()
 }
 
 // SumWX2 returns the 2nd order weighted x moment
-func (d *dist2D) SumWX2() float64 {
-	return d.x.SumWX2()
+func (d *Dist2D) SumWX2() float64 {
+	return d.X.SumWX2()
 }
 
 // SumWY returns the 1st order weighted y moment
-func (d *dist2D) SumWY() float64 {
-	return d.y.SumWX()
+func (d *Dist2D) SumWY() float64 {
+	return d.Y.SumWX()
 }
 
 // SumWY2 returns the 2nd order weighted y moment
-func (d *dist2D) SumWY2() float64 {
-	return d.y.SumWX2()
+func (d *Dist2D) SumWY2() float64 {
+	return d.Y.SumWX2()
 }
 
 // errW returns the absolute error on sumW()
-func (d *dist2D) errW() float64 {
-	return d.x.errW()
+func (d *Dist2D) errW() float64 {
+	return d.X.errW()
 }
 
 // relErrW returns the relative error on sumW()
-func (d *dist2D) relErrW() float64 {
-	return d.x.relErrW()
+func (d *Dist2D) relErrW() float64 {
+	return d.X.relErrW()
 }
 
 // xMean returns the weighted mean of the distribution
-func (d *dist2D) xMean() float64 {
-	return d.x.mean()
+func (d *Dist2D) xMean() float64 {
+	return d.X.mean()
 }
 
 // yMean returns the weighted mean of the distribution
-func (d *dist2D) yMean() float64 {
-	return d.y.mean()
+func (d *Dist2D) yMean() float64 {
+	return d.Y.mean()
 }
 
 // xVariance returns the weighted variance of the distribution
-func (d *dist2D) xVariance() float64 {
-	return d.x.variance()
+func (d *Dist2D) xVariance() float64 {
+	return d.X.variance()
 }
 
 // yVariance returns the weighted variance of the distribution
-func (d *dist2D) yVariance() float64 {
-	return d.y.variance()
+func (d *Dist2D) yVariance() float64 {
+	return d.Y.variance()
 }
 
 // xStdDev returns the weighted standard deviation of the distribution
-func (d *dist2D) xStdDev() float64 {
-	return d.x.stdDev()
+func (d *Dist2D) xStdDev() float64 {
+	return d.X.stdDev()
 }
 
 // yStdDev returns the weighted standard deviation of the distribution
-func (d *dist2D) yStdDev() float64 {
-	return d.y.stdDev()
+func (d *Dist2D) yStdDev() float64 {
+	return d.Y.stdDev()
 }
 
 // xStdErr returns the weighted standard error of the distribution
-func (d *dist2D) xStdErr() float64 {
-	return d.x.stdErr()
+func (d *Dist2D) xStdErr() float64 {
+	return d.X.stdErr()
 }
 
 // yStdErr returns the weighted standard error of the distribution
-func (d *dist2D) yStdErr() float64 {
-	return d.y.stdErr()
+func (d *Dist2D) yStdErr() float64 {
+	return d.Y.stdErr()
 }
 
 // xRMS returns the weighted RMS of the distribution
-func (d *dist2D) xRMS() float64 {
-	return d.x.rms()
+func (d *Dist2D) xRMS() float64 {
+	return d.X.rms()
 }
 
 // yRMS returns the weighted RMS of the distribution
-func (d *dist2D) yRMS() float64 {
-	return d.y.rms()
+func (d *Dist2D) yRMS() float64 {
+	return d.Y.rms()
 }
 
-func (d *dist2D) fill(x, y, w float64) {
-	d.x.fill(x, w)
-	d.y.fill(y, w)
-	d.sumWXY += w * x * y
+func (d *Dist2D) fill(x, y, w float64) {
+	d.X.fill(x, w)
+	d.Y.fill(y, w)
+	d.SumWXY += w * x * y
 }
 
-func (d *dist2D) scaleW(f float64) {
-	d.x.scaleW(f)
-	d.y.scaleW(f)
-	d.sumWXY *= f
+func (d *Dist2D) scaleW(f float64) {
+	d.X.scaleW(f)
+	d.Y.scaleW(f)
+	d.SumWXY *= f
 }
 
-func (d *dist2D) scaleX(f float64) {
-	d.x.scaleX(f)
-	d.sumWXY *= f
+func (d *Dist2D) scaleX(f float64) {
+	d.X.scaleX(f)
+	d.SumWXY *= f
 }
 
-func (d *dist2D) scaleY(f float64) {
-	d.y.scaleX(f)
-	d.sumWXY *= f
+func (d *Dist2D) scaleY(f float64) {
+	d.Y.scaleX(f)
+	d.SumWXY *= f
 }
 
-func (d *dist2D) scaleXY(fx, fy float64) {
+func (d *Dist2D) scaleXY(fx, fy float64) {
 	d.scaleX(fx)
 	d.scaleY(fy)
 }
