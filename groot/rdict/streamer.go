@@ -161,10 +161,10 @@ func (bld *streamerBuilder) genField(field reflect.StructField) rbytes.StreamerE
 			},
 		}
 	case reflect.String:
-		return &StreamerString{
+		return &StreamerObjectAny{
 			StreamerElement{
 				named:  *rbase.NewNamed(nameOf(field), ""),
-				etype:  rmeta.TString,
+				etype:  rmeta.Any,
 				esize:  int32(field.Type.Size()),
 				offset: offsetOf(field),
 				ename:  "golang::string",

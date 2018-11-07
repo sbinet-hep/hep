@@ -23,9 +23,9 @@ func TestStreamerOf(t *testing.T) {
 			want: &StreamerInfo{
 				named: *rbase.NewNamed("struct1", "struct1"),
 				elems: []rbytes.StreamerElement{
-					&StreamerString{StreamerElement{
+					&StreamerObjectAny{StreamerElement{
 						named:  *rbase.NewNamed("Name", ""),
-						etype:  rmeta.TString,
+						etype:  rmeta.Any,
 						esize:  16,
 						offset: 0,
 						ename:  "golang::string",
