@@ -21,8 +21,17 @@ import (
 
 func TestSchema(t *testing.T) {
 	for _, si := range sinfos {
+		fmt.Printf("=================\n")
+		fmt.Printf("schema for %q\n", si.Name())
 		schema := rarrow.SchemaFrom(sictx, si)
-		fmt.Printf("schema= %#v\n", schema)
+		md := schema.Metadata()
+		for i, k := range md.Keys() {
+			fmt.Printf("%s: %q\n", k, md.Values()[i])
+		}
+		fmt.Printf("fields: %d\n", len(schema.Fields()))
+		for _, f := range schema.Fields() {
+			fmt.Printf("%s: %v\n", f.Name, f.Type.Name())
+		}
 	}
 }
 

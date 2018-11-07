@@ -17,13 +17,16 @@ import (
 
 func SchemaFrom(sictx rbytes.StreamerInfoContext, si rbytes.StreamerInfo) *arrow.Schema {
 	var (
-		bld    = builder{si: si, sictx: sictx}
+		bld    = newBuilder(sictx, si)
 		md     = bld.genMetadata(si)
 		fields = make([]arrow.Field, 0, len(si.Elements()))
 	)
 	fmt.Printf("gen-schema: %s %q\n", si.Name(), si.Title())
 	for _, elem := range si.Elements() {
 		fmt.Printf("--> %s (%T)\n", elem.Name(), elem)
+	}
+	for _, elem := range si.Elements() {
+		bld.addDataType(elem)
 	}
 	for i, elem := range si.Elements() {
 		fields = append(fields, bld.genField(elem, i))
@@ -32,8 +35,17 @@ func SchemaFrom(sictx rbytes.StreamerInfoContext, si rbytes.StreamerInfo) *arrow
 }
 
 type builder struct {
-	si    rbytes.StreamerInfo
-	sictx rbytes.StreamerInfoContext
+	si     rbytes.StreamerInfo
+	sictx  rbytes.StreamerInfoContext
+	dtypes map[string]arrow.DataType
+}
+
+func newBuilder(ctx rbytes.StreamerInfoContext, si rbytes.StreamerInfo) *builder {
+	return &builder{
+		si:     si,
+		sictx:  ctx,
+		dtypes: make(map[string]arrow.DataType),
+	}
 }
 
 func (builder) genMetadata(si rbytes.StreamerInfo) arrow.Metadata {
@@ -48,9 +60,14 @@ func (builder) genMetadata(si rbytes.StreamerInfo) arrow.Metadata {
 }
 
 func (b *builder) genField(se rbytes.StreamerElement, i int) arrow.Field {
+	dt, ok := b.dtypes[se.Name()]
+	if !ok {
+		panic(errors.Errorf("rarrow: invalid data type for %q (%T)", se.Name(), se))
+	}
+
 	return arrow.Field{
 		Name: se.Name(),
-		Type: b.r2arr(se, i),
+		Type: dt,
 	}
 }
 
@@ -66,7 +83,165 @@ var (
 	_ arrow.DataType = (*todoDataType)(nil)
 )
 
-func (b builder) r2arr(se rbytes.StreamerElement, i int) arrow.DataType {
+func (b *builder) addDataType(se rbytes.StreamerElement) {
+	dt := b.genDataType(se)
+	b.dtypes[se.Name()] = dt
+}
+
+func (b *builder) genDataType(se rbytes.StreamerElement) arrow.DataType {
+	if dt, ok := b.dtypes[se.Name()]; ok {
+		return dt
+	}
+
+	switch se := se.(type) {
+	case *rdict.StreamerBase:
+	case *rdict.StreamerBasicType:
+
+		switch rt := se.Type(); rt {
+		case rmeta.Counter:
+			switch se.Size() {
+			case 4:
+				return arrow.PrimitiveTypes.Int32
+			case 8:
+				return arrow.PrimitiveTypes.Int64
+			default:
+				panic(errors.Errorf("rarrow: invalid rmeta.Counter size %d", se.Size()))
+			}
+
+		case rmeta.Char:
+			return arrow.PrimitiveTypes.Int8
+		case rmeta.Short:
+			return arrow.PrimitiveTypes.Int16
+		case rmeta.Int:
+			return arrow.PrimitiveTypes.Int32
+		case rmeta.Long, rmeta.Long64:
+			return arrow.PrimitiveTypes.Int64
+
+		case rmeta.CharStar, rmeta.LegacyChar:
+			return arrow.BinaryTypes.Binary
+
+		case rmeta.Float:
+			return arrow.PrimitiveTypes.Float32
+		case rmeta.Double:
+			return arrow.PrimitiveTypes.Float64
+		case rmeta.Float16:
+			panic("float16 not supported") // FIXME(sbinet)
+			return arrow.PrimitiveTypes.Float32
+		case rmeta.Double32:
+			panic("double32 not supported") // FIXME(sbinet)
+			return arrow.PrimitiveTypes.Float64
+
+		case rmeta.UChar:
+			return arrow.PrimitiveTypes.Uint8
+		case rmeta.UShort:
+			return arrow.PrimitiveTypes.Uint16
+		case rmeta.UInt:
+			return arrow.PrimitiveTypes.Uint32
+		case rmeta.ULong, rmeta.ULong64:
+			return arrow.PrimitiveTypes.Uint64
+
+		case rmeta.Bool:
+			return arrow.FixedWidthTypes.Boolean
+
+		case rmeta.OffsetL + rmeta.Char:
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Int8)
+		case rmeta.OffsetL + rmeta.Short:
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Int16)
+		case rmeta.OffsetL + rmeta.Int:
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Int32)
+		case rmeta.OffsetL + rmeta.Long, rmeta.OffsetL + rmeta.Long64:
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Int64)
+		case rmeta.OffsetL + rmeta.UChar:
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Uint8)
+		case rmeta.OffsetL + rmeta.UShort:
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Uint16)
+		case rmeta.OffsetL + rmeta.UInt:
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Uint32)
+		case rmeta.OffsetL + rmeta.ULong, rmeta.OffsetL + rmeta.ULong64:
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Uint64)
+
+		case rmeta.OffsetL + rmeta.Float:
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Float32)
+		case rmeta.OffsetL + rmeta.Double:
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Float64)
+		case rmeta.OffsetL + rmeta.Float16:
+			panic("float16 not supported") // FIXME(sbinet)
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Float32)
+		case rmeta.OffsetL + rmeta.Double32:
+			panic("double32 not supported") // FIXME(sbinet)
+			return arrayOf(se.ArrayLen(), arrow.PrimitiveTypes.Float64)
+
+		case rmeta.OffsetL + rmeta.Bool:
+			return arrayOf(se.ArrayLen(), arrow.FixedWidthTypes.Boolean)
+
+		default:
+			panic(errors.Errorf("rarrow: invalid StreamerBasicType: %#v", se))
+		}
+
+	case *rdict.StreamerBasicPointer:
+		switch se.Type() {
+		case rmeta.OffsetP + rmeta.Char:
+			return sliceOf(arrow.PrimitiveTypes.Int8)
+		case rmeta.OffsetP + rmeta.Short:
+			return sliceOf(arrow.PrimitiveTypes.Int16)
+		case rmeta.OffsetP + rmeta.Int:
+			return sliceOf(arrow.PrimitiveTypes.Int32)
+		case rmeta.OffsetP + rmeta.Long, rmeta.OffsetP + rmeta.Long64:
+			return sliceOf(arrow.PrimitiveTypes.Int64)
+		case rmeta.OffsetP + rmeta.Float:
+			return sliceOf(arrow.PrimitiveTypes.Float32)
+		case rmeta.OffsetP + rmeta.Float16:
+			panic("float16 not supported") // FIXME(sbinet)
+			return sliceOf(arrow.PrimitiveTypes.Float32)
+		case rmeta.OffsetP + rmeta.Double32:
+			panic("double32 not supported") // FIXME(sbinet)
+			return sliceOf(arrow.PrimitiveTypes.Float64)
+		case rmeta.OffsetP + rmeta.Double:
+			return sliceOf(arrow.PrimitiveTypes.Float64)
+		case rmeta.OffsetP + rmeta.UChar, rmeta.OffsetP + rmeta.CharStar:
+			return sliceOf(arrow.PrimitiveTypes.Uint8)
+		case rmeta.OffsetP + rmeta.UShort:
+			return sliceOf(arrow.PrimitiveTypes.Uint16)
+		case rmeta.OffsetP + rmeta.UInt, rmeta.OffsetP + rmeta.Bits:
+			return sliceOf(arrow.PrimitiveTypes.Uint32)
+		case rmeta.OffsetP + rmeta.ULong, rmeta.OffsetP + rmeta.ULong64:
+			return sliceOf(arrow.PrimitiveTypes.Uint64)
+		case rmeta.OffsetP + rmeta.Bool:
+			return sliceOf(arrow.FixedWidthTypes.Boolean)
+		default:
+			panic(errors.Errorf("rarrow: invalid StreamerBasicPointer: %#v", se))
+		}
+	case *rdict.StreamerLoop:
+		panic(errors.Errorf("rarrow: StreamerLoop not supported %#v", se))
+
+	case *rdict.StreamerObject:
+		sio, err := b.sictx.StreamerInfo(se.TypeName())
+		if err != nil {
+			panic(errors.Wrapf(err, "could not find StreamerInfo for StreamerObject"))
+		}
+		return b.genType(sio)
+
+	case *rdict.StreamerObjectPointer:
+
+	case *rdict.StreamerObjectAny:
+		if se.TypeName() == "golang::string" {
+			return gostring
+		}
+
+	case *rdict.StreamerString:
+		return arrow.BinaryTypes.String
+	case *rdict.StreamerSTL:
+	case *rdict.StreamerSTLstring:
+		return arrow.BinaryTypes.String
+	case *rdict.StreamerArtificial:
+	default:
+		panic(errors.Errorf("rarrow: invalid streamer element %T", se))
+	}
+
+	panic(errors.Errorf("rarrow: invalid streamer element %T (%s)\n%#v", se, se.TypeName(), se))
+}
+
+func (b *builder) r2arr(se rbytes.StreamerElement, i int) arrow.DataType {
 	switch se := se.(type) {
 	case *rdict.StreamerBase:
 		return arrow.StructOf(
@@ -270,8 +445,10 @@ func sliceOf(dt arrow.DataType) arrow.DataType {
 }
 
 var (
-	tnamed  arrow.DataType
-	tobject arrow.DataType
+	tnamed   arrow.DataType
+	tobject  arrow.DataType
+	gostring arrow.DataType
+	goslice  arrow.DataType
 )
 
 func init() {
@@ -286,4 +463,14 @@ func init() {
 		arrow.Field{Name: "title", Type: arrow.BinaryTypes.String},
 	)
 
+	gostring = arrow.StructOf(
+		arrow.Field{Name: "Data", Type: arrow.BinaryTypes.Binary},
+		arrow.Field{Name: "Len", Type: arrow.PrimitiveTypes.Int64}, // FIXME(sbinet): 32/64b
+	)
+
+	goslice = arrow.StructOf(
+		arrow.Field{Name: "Data", Type: arrow.BinaryTypes.Binary},
+		arrow.Field{Name: "Len", Type: arrow.PrimitiveTypes.Int64}, // FIXME(sbinet): 32/64b
+		arrow.Field{Name: "Cap", Type: arrow.PrimitiveTypes.Int64}, // FIXME(sbinet): 32/64b
+	)
 }
