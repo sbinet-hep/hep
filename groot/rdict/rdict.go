@@ -306,6 +306,12 @@ type StreamerBasicType struct {
 	StreamerElement
 }
 
+func NewStreamerBasicType(elem StreamerElement) *StreamerBasicType {
+	return &StreamerBasicType{
+		StreamerElement: elem,
+	}
+}
+
 func (*StreamerBasicType) RVersion() int16 { return rvers.StreamerBasicType }
 
 func (tsb *StreamerBasicType) Class() string {

@@ -330,6 +330,35 @@ func TestStreamerOf(t *testing.T) {
 				},
 			},
 		},
+		//		{
+		//			typ: reflect.TypeOf((*struct5)(nil)).Elem(),
+		//			want: &StreamerInfo{
+		//				named: *rbase.NewNamed("struct5", "struct5"),
+		//				elems: []rbytes.StreamerElement{
+		//					&StreamerBasicPointer{StreamerElement{
+		//						named:  *rbase.NewNamed("I32", ""),
+		//						etype:  rmeta.Int,
+		//						esize:  int32(ptrSize),
+		//						offset: 0,
+		//						ename:  "golang::int32*",
+		//					}},
+		//					&StreamerBasicPointer{StreamerElement{
+		//						named:  *rbase.NewNamed("F64", ""),
+		//						etype:  rmeta.Double,
+		//						esize:  int32(ptrSize),
+		//						offset: 0,
+		//						ename:  "golang::float64*",
+		//					}},
+		//					&StreamerBasicPointer{StreamerElement{
+		//						named:  *rbase.NewNamed("S1", ""),
+		//						etype:  rmeta.Int,
+		//						esize:  int32(ptrSize),
+		//						offset: 0,
+		//						ename:  "struct1*",
+		//					}},
+		//				},
+		//			},
+		//		},
 	} {
 		t.Run(tc.want.Name(), func(t *testing.T) {
 			got := StreamerOf(ctx, tc.typ)
@@ -390,6 +419,12 @@ type struct4 struct {
 	F32s  []float32
 	F64s  []float64
 	S1s   []struct1
+}
+
+type struct5 struct {
+	I32 *int32
+	F64 *float64
+	S1  *struct1
 }
 
 var (
