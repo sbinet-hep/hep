@@ -16,9 +16,6 @@ matrix:
  allow_failures:
    - go: master
  include:
-   - go: 1.9.x
-     env:
-       - TAGS="-tags travis"
    - go: 1.10.x
      env:
        - TAGS="-tags travis"
