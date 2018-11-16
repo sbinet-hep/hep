@@ -2,11 +2,11 @@ module go-hep.org/x/hep
 
 require (
 	github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802 // indirect
+	github.com/apache/arrow/go/arrow v0.0.0-20181116145818-d91185000945
 	github.com/cznic/ql v1.2.0
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
-	github.com/gonuts/binary v0.1.0
+	github.com/gonuts/binary v0.2.0
 	github.com/gonuts/commander v0.1.0
 	github.com/gonuts/flag v0.1.0
 	github.com/google/go-cmp v0.2.0
@@ -18,10 +18,7 @@ require (
 	github.com/pierrec/lz4 v2.0.5+incompatible
 	github.com/pierrec/xxHash v0.1.1
 	github.com/pkg/errors v0.8.0
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sbinet/npyio v0.2.0
-	github.com/stretchr/testify v1.2.2 // indirect
-	github.com/stretchrcom/testify v1.2.2 // indirect
 	github.com/ulikunitz/xz v0.5.5
 	go-hep.org/x/exp v0.0.0-20180802154217-6d993ac81a11
 	golang.org/x/crypto v0.0.0-20181106171534-e4dc69e5b2fd
