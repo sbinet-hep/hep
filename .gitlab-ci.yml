@@ -17,6 +17,11 @@ before_script:
 stages:
  - build
 
+cache:
+ paths:
+  - $GOPATH/pkg/mod
+  - $HOME/.cache/go-build
+
 go-1.11:
  image: golang:1.11
  stage: build
