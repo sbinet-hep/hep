@@ -88,6 +88,8 @@ func (obj *Object) UnmarshalROOT(r *rbytes.RBuffer) error {
 		switch rf.Kind() {
 		case reflect.Array:
 			rf = rf.Slice(0, rf.Len())
+		case reflect.Slice:
+			// FIXME(sbinet): get correct size, set-len.
 		default:
 			rf = rf.Addr()
 		}
@@ -262,11 +264,11 @@ func genRStreamerFromSE(sictx rbytes.StreamerInfoContext, se rbytes.StreamerElem
 			return r.Err()
 		}
 	case *StreamerBasicType:
-		return genRStreamer(sictx, se.Type(), se.ArrayLen(), recv)
+		return genRStreamer(sictx, se, se.Type(), se.ArrayLen(), recv)
 	case *StreamerString, *StreamerSTLstring:
-		return genRStreamer(sictx, se.Type(), se.ArrayLen(), recv)
+		return genRStreamer(sictx, se, se.Type(), se.ArrayLen(), recv)
 	case *StreamerBasicPointer:
-		return genRStreamer(sictx, se.Type(), -1, recv)
+		return genRStreamer(sictx, se, se.Type(), -1, recv)
 
 	case *StreamerObjectAny:
 		typename := se.TypeName()
@@ -462,7 +464,7 @@ func genType(sictx rbytes.StreamerInfoContext, enum rmeta.Enum, n int) reflect.T
 	panic(errors.Errorf("rmeta=%d not implemented (n=%v)", enum, n))
 }
 
-func genRStreamer(sictx rbytes.StreamerInfoContext, enum rmeta.Enum, n int, recv reflect.Value) rfunc {
+func genRStreamer(sictx rbytes.StreamerInfoContext, se rbytes.StreamerElement, enum rmeta.Enum, n int, recv reflect.Value) rfunc {
 	switch enum {
 	case rmeta.Bool:
 		return readBool
@@ -490,7 +492,14 @@ func genRStreamer(sictx rbytes.StreamerInfoContext, enum rmeta.Enum, n int, recv
 		return readStr
 
 	case rmeta.Counter:
-		return readInt
+		switch se.Size() {
+		case 4:
+			return readCounter32
+		case 8:
+			return readCounter64
+		default:
+			panic(errors.Errorf("rdict: invalid counter size %d", se.Size()))
+		}
 
 	case rmeta.OffsetL + rmeta.Bool:
 		return readBools
@@ -517,8 +526,40 @@ func genRStreamer(sictx rbytes.StreamerInfoContext, enum rmeta.Enum, n int, recv
 	case rmeta.OffsetL + rmeta.TString, rmeta.OffsetL + rmeta.STLstring:
 		return readStrs
 
+	case rmeta.OffsetP + rmeta.Bool:
+		return rsliceHdr(readBools, se)
+	case rmeta.OffsetP + rmeta.Uint8:
+		return rsliceHdr(readU8s, se)
+	case rmeta.OffsetP + rmeta.Uint16:
+		return rsliceHdr(readU16s, se)
+	case rmeta.OffsetP + rmeta.Uint32:
+		return rsliceHdr(readU32s, se)
+	case rmeta.OffsetP + rmeta.Uint64:
+		return rsliceHdr(readU64s, se)
+	case rmeta.OffsetP + rmeta.Int8:
+		return rsliceHdr(readI8s, se)
+	case rmeta.OffsetP + rmeta.Int16:
+		return rsliceHdr(readI16s, se)
+	case rmeta.OffsetP + rmeta.Int32:
+		return rsliceHdr(readI32s, se)
+	case rmeta.OffsetP + rmeta.Int64:
+		return rsliceHdr(readI64s, se)
+	case rmeta.OffsetP + rmeta.Float32:
+		return rsliceHdr(readF32s, se)
+	case rmeta.OffsetP + rmeta.Float64:
+		return rsliceHdr(readF64s, se)
+	case rmeta.OffsetP + rmeta.TString, rmeta.OffsetP + rmeta.STLstring:
+		return rsliceHdr(readStrs, se)
+
 	}
-	panic(errors.Errorf("rdict: gen-rstreamer not implemented for rmeta=%v,n=%d", enum, n))
+	panic(errors.Errorf("rdict: gen-rstreamer not implemented for rmeta=%v,n=%d streamer=%T", enum, n, se))
+}
+
+func rsliceHdr(f rfunc, se rbytes.StreamerElement) rfunc {
+	return func(recv interface{}, r *rbytes.RBuffer) error {
+		_ = r.ReadI8() // FIXME(sbinet): what's its use?
+		return f(recv, r)
+	}
 }
 
 func readBool(recv interface{}, r *rbytes.RBuffer) error {
@@ -583,6 +624,16 @@ func readStr(recv interface{}, r *rbytes.RBuffer) error {
 
 func readInt(recv interface{}, r *rbytes.RBuffer) error {
 	panic("not implemented")
+	*(recv.(*int)) = int(r.ReadI64())
+	return r.Err()
+}
+
+func readCounter32(recv interface{}, r *rbytes.RBuffer) error {
+	*(recv.(*int)) = int(r.ReadI32())
+	return r.Err()
+}
+
+func readCounter64(recv interface{}, r *rbytes.RBuffer) error {
 	*(recv.(*int)) = int(r.ReadI64())
 	return r.Err()
 }
