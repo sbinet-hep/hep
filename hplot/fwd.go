@@ -8,12 +8,6 @@ import (
 	"gonum.org/v1/plot/plotter"
 )
 
-// NewLine returns a Line that uses the default line style and
-// does not draw glyphs.
-func NewLine(xys plotter.XYer) (*plotter.Line, error) {
-	return plotter.NewLine(xys)
-}
-
 // NewScatter returns a Scatter that uses the
 // default glyph style.
 func NewScatter(xys plotter.XYer) (*plotter.Scatter, error) {
