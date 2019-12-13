@@ -5,10 +5,10 @@
 package lcio_test
 
 import (
-	"compress/flate"
 	"reflect"
 	"testing"
 
+	"github.com/klauspost/compress/flate"
 	"go-hep.org/x/hep/lcio"
 )
 

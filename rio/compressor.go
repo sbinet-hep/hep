@@ -5,11 +5,11 @@
 package rio
 
 import (
-	"compress/flate"
-	"compress/gzip"
-	"compress/zlib"
 	"io"
 
+	"github.com/klauspost/compress/flate"
+	"github.com/klauspost/compress/gzip"
+	"github.com/klauspost/compress/zlib"
 	"golang.org/x/xerrors"
 )
 

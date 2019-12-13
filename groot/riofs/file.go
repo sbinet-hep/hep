@@ -5,7 +5,6 @@
 package riofs
 
 import (
-	"compress/flate"
 	"fmt"
 	"io"
 	"math"
@@ -13,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/klauspost/compress/flate"
 	"go-hep.org/x/hep/groot/internal/rcompress"
 	"go-hep.org/x/hep/groot/rbase"
 	"go-hep.org/x/hep/groot/rbytes"

@@ -8,7 +8,6 @@ package rcompress_test
 
 import (
 	"bytes"
-	"compress/flate"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -17,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/klauspost/compress/flate"
 	"go-hep.org/x/hep/groot/internal/rcompress"
 	"go-hep.org/x/hep/groot/internal/rtests"
 	"go-hep.org/x/hep/groot/rbase"

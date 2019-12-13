@@ -6,11 +6,11 @@ package rio // import "go-hep.org/x/hep/rio"
 
 import (
 	"bytes"
-	"compress/flate"
 	"encoding/binary"
 	"io"
 	"reflect"
 
+	"github.com/klauspost/compress/flate"
 	"golang.org/x/xerrors"
 )
 

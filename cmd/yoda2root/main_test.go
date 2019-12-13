@@ -5,13 +5,13 @@
 package main
 
 import (
-	"compress/gzip"
 	"io"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/klauspost/compress/gzip"
 	"go-hep.org/x/hep/groot"
 	"go-hep.org/x/hep/groot/rhist"
 	"go-hep.org/x/hep/hbook"

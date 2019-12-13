@@ -5,7 +5,6 @@
 package lcio_test
 
 import (
-	"compress/flate"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -15,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/klauspost/compress/flate"
 	"go-hep.org/x/hep/lcio"
 )
 

@@ -5,8 +5,7 @@
 package lcio
 
 import (
-	"compress/flate"
-
+	"github.com/klauspost/compress/flate"
 	"go-hep.org/x/hep/sio"
 )
 

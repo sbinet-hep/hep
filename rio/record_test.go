@@ -5,8 +5,9 @@
 package rio
 
 import (
-	"compress/flate"
 	"testing"
+
+	"github.com/klauspost/compress/flate"
 )
 
 func TestRecord(t *testing.T) {

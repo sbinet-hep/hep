@@ -125,7 +125,6 @@
 package main
 
 import (
-	"archive/zip"
 	"bytes"
 	"flag"
 	"io"
@@ -133,6 +132,7 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/klauspost/compress/zip"
 	"github.com/sbinet/npyio"
 
 	"go-hep.org/x/hep/groot"

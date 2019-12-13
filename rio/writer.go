@@ -6,10 +6,10 @@ package rio
 
 import (
 	"bufio"
-	"compress/flate"
 	"io"
 
 	riobin "github.com/gonuts/binary"
+	"github.com/klauspost/compress/flate"
 )
 
 type cwriter struct {

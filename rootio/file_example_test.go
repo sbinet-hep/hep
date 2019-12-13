@@ -5,11 +5,11 @@
 package rootio_test
 
 import (
-	"compress/flate"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/klauspost/compress/flate"
 	"go-hep.org/x/hep/rootio"
 )
 

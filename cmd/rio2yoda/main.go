@@ -13,7 +13,6 @@
 package main
 
 import (
-	"compress/gzip"
 	"flag"
 	"fmt"
 	"io"
@@ -22,6 +21,7 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/klauspost/compress/gzip"
 	"go-hep.org/x/hep/hbook"
 	"go-hep.org/x/hep/rio"
 )

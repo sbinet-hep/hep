@@ -12,7 +12,6 @@
 package main // import "go-hep.org/x/hep/cmd/yoda2rio"
 
 import (
-	"compress/gzip"
 	"flag"
 	"fmt"
 	"io"
@@ -20,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/klauspost/compress/gzip"
 	"go-hep.org/x/hep/hbook/yodacnv"
 	"go-hep.org/x/hep/rio"
 )

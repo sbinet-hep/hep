@@ -7,11 +7,11 @@
 package main
 
 import (
-	"compress/zlib"
 	"flag"
 	"log"
 	"os"
 
+	"github.com/klauspost/compress/zlib"
 	"go-hep.org/x/hep/rio"
 )
 

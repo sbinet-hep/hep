@@ -6,13 +6,14 @@ package sio
 
 import (
 	"bytes"
-	"compress/flate"
-	"compress/zlib"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
 	"unsafe"
+
+	"github.com/klauspost/compress/flate"
+	"github.com/klauspost/compress/zlib"
 )
 
 // Open opens and connects a RIO stream to a file for reading

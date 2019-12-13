@@ -6,7 +6,6 @@ package rootio
 
 import (
 	"bytes"
-	"compress/flate"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/klauspost/compress/flate"
 )
 
 func TestCompress(t *testing.T) {

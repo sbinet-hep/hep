@@ -6,13 +6,14 @@ package rio
 
 import (
 	"bytes"
-	"compress/flate"
 	"encoding/binary"
 	"encoding/gob"
 	"fmt"
 	"io"
 	"reflect"
 	"testing"
+
+	"github.com/klauspost/compress/flate"
 )
 
 func TestOptions(t *testing.T) {

@@ -13,7 +13,6 @@
 package main // import "go-hep.org/x/hep/cmd/root2yoda"
 
 import (
-	"compress/gzip"
 	"flag"
 	"fmt"
 	"io"
@@ -21,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/klauspost/compress/gzip"
 	"go-hep.org/x/hep/groot"
 	"go-hep.org/x/hep/groot/riofs"
 	_ "go-hep.org/x/hep/groot/riofs/plugin/http"

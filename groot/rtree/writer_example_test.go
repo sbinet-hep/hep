@@ -5,11 +5,11 @@
 package rtree_test
 
 import (
-	"compress/flate"
 	"fmt"
 	"io"
 	"log"
 
+	"github.com/klauspost/compress/flate"
 	"go-hep.org/x/hep/groot"
 	"go-hep.org/x/hep/groot/rtree"
 )

@@ -5,7 +5,6 @@
 package rtree
 
 import (
-	"compress/flate"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/klauspost/compress/flate"
 	"go-hep.org/x/hep/groot/internal/rtests"
 	"go-hep.org/x/hep/groot/rbase"
 	"go-hep.org/x/hep/groot/rbytes"

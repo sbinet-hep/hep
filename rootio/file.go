@@ -5,12 +5,12 @@
 package rootio
 
 import (
-	"compress/flate"
 	"io"
 	"os"
 	"reflect"
 	"sort"
 
+	"github.com/klauspost/compress/flate"
 	"golang.org/x/xerrors"
 )
 

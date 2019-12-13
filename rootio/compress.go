@@ -6,11 +6,11 @@ package rootio
 
 import (
 	"bytes"
-	"compress/flate"
-	"compress/zlib"
 	"encoding/binary"
 	"io"
 
+	"github.com/klauspost/compress/flate"
+	"github.com/klauspost/compress/zlib"
 	"github.com/pierrec/lz4"
 	"github.com/pierrec/xxHash/xxHash64"
 	"github.com/ulikunitz/xz"
