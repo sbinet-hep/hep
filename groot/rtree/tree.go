@@ -485,6 +485,19 @@ func (tree *ttree) UnmarshalROOT(r *rbytes.RBuffer) error {
 	return r.Err()
 }
 
+func SchemaFrom(tree Tree) *rdict.Schema {
+	var (
+		t     = tree.(*ttree)
+		sictx rbytes.StreamerInfoContext
+		elmts []rbytes.StreamerElement
+	)
+	sc, err := rdict.NewSchema(t.Name(), sictx, elmts)
+	if err != nil {
+		panic(err)
+	}
+	return sc
+}
+
 func (tree *ttree) attachStreamer(br Branch, info rbytes.StreamerInfo, ctx rbytes.StreamerInfoContext) {
 	if info == nil {
 		return
