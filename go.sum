@@ -13,6 +13,8 @@ github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af h1:wVe6/Ea46ZMeNkQjj
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
 github.com/ajstarks/svgo v0.0.0-20200320125537-f189e35d30ca h1:kWzLcty5V2rzOqJM7Tp/MfSX0RMSI1x4IOLApEefYxA=
 github.com/ajstarks/svgo v0.0.0-20200320125537-f189e35d30ca/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
+github.com/ajstarks/svgo v0.0.0-20200725142600-7a3c8b57fecb h1:EVl3FJLQCzSbgBezKo/1A4ADnJ4mtJZ0RvnNzDJ44nY=
+github.com/ajstarks/svgo v0.0.0-20200725142600-7a3c8b57fecb/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
 github.com/apache/arrow/go/arrow v0.0.0-20200619041403-25a9567c07fe h1:pQ2nFXY/0KWUQB/Syy4iQji6RqBuOQ8IYxYbTSmlOyI=
 github.com/apache/arrow/go/arrow v0.0.0-20200619041403-25a9567c07fe/go.mod h1:QNYViu/X0HXDHw7m3KXzWSVXIbfUvJqBFe6Gj8/pYA0=
 github.com/astrogo/fitsio v0.1.0 h1:lJtA14sbCDPqPc0j6sA6pejFCDGugcb/BD36TOQVrNU=
@@ -133,6 +135,8 @@ golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a/go.mod h1:FeLwcggjj3mMvU+o
 golang.org/x/image v0.0.0-20200430140353-33d19683fad8/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/image v0.0.0-20200618115811-c13761719519 h1:1e2ufUJNM3lCHEY5jIgac/7UTjd6cgJNdatjPdFWf34=
 golang.org/x/image v0.0.0-20200618115811-c13761719519/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
+golang.org/x/image v0.0.0-20200801110659-972c09e46d76 h1:U7GPaoQyQmX+CBRWXKrvRzWTbd+slqeSh8uARsIyhAw=
+golang.org/x/image v0.0.0-20200801110659-972c09e46d76/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/mobile v0.0.0-20190312151609-d3739f865fa6/go.mod h1:z+o9i4GpDbdi3rU15maQ/Ox0txvL9dWGYEHz965HBQE=
 golang.org/x/mobile v0.0.0-20190719004257-d2bd2a29d028/go.mod h1:E/iHnbuqvinMTCcRqshq8CkpyQDoeVncDDYHnLhea+o=
 golang.org/x/mobile v0.0.0-20191031020345-0945064e013a/go.mod h1:p895TfNkDgPEmEQrNiOtIl3j98d/tGU95djDj7NfyjQ=
@@ -187,6 +191,8 @@ gonum.org/v1/plot v0.7.1-0.20200619102754-57b3081579f0 h1:xckKLKrCpSJBMlrY3QpvP2
 gonum.org/v1/plot v0.7.1-0.20200619102754-57b3081579f0/go.mod h1:4pdKXQ8+I1vWp+7PapcCDV0RNuYgg16uqFXps2Xkglw=
 gonum.org/v1/plot v0.7.1-0.20200701071522-4260761de856 h1:2Axju2AGxIkAlBR8WYdM1zpGdq5NJEvdwhVxL/P6PKI=
 gonum.org/v1/plot v0.7.1-0.20200701071522-4260761de856/go.mod h1:N6YeagiVNq5SGfPX2Xjp+DhSYhFCPU6uzPHWIjEsjVc=
+gonum.org/v1/plot v0.7.1-0.20200803112113-51d59f92618d h1:1xaty+dsw5CTUY9KEw8WdH7DAaLOibP0KnJe6NeDM5E=
+gonum.org/v1/plot v0.7.1-0.20200803112113-51d59f92618d/go.mod h1:N6YeagiVNq5SGfPX2Xjp+DhSYhFCPU6uzPHWIjEsjVc=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 h1:tQIYjPdBoyREyB9XMu+nnTclpTYkz2zFM+lzLJFO4gQ=

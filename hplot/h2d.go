@@ -33,9 +33,11 @@ func NewH2D(h *hbook.H2D, p palette.Palette) *H2D {
 	if p == nil {
 		p, _ = brewer.GetPalette(brewer.TypeAny, "RdYlBu", 11)
 	}
+	hmap := plotter.NewHeatMap(h.GridXYZ(), p)
+	hmap.Rasterized = true
 	return &H2D{
 		H:       h,
-		HeatMap: plotter.NewHeatMap(h.GridXYZ(), p),
+		HeatMap: hmap,
 	}
 }
 
