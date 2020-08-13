@@ -39,9 +39,7 @@ type Branch interface {
 
 	setTree(*ttree)
 	getTree() *ttree
-	loadEntry(i int64) error
 	getReadEntry() int64
-	getEntry(i int64)
 	scan(ptr interface{}) error
 	setAddress(ptr interface{}) error
 	setStreamer(s rbytes.StreamerInfo, ctx rbytes.StreamerInfoContext)

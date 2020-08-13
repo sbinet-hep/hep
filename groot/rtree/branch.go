@@ -224,16 +224,6 @@ func (b *tbranch) getReadEntry() int64 {
 	return b.ctx.entry
 }
 
-func (b *tbranch) getEntry(i int64) {
-	if b.ctx.entry == i {
-		return
-	}
-	err := b.loadEntry(i)
-	if err != nil {
-		panic(fmt.Errorf("rtree: branch [%s] failed to load entry %d: %w", b.Name(), i, err))
-	}
-}
-
 func (b *tbranch) MarshalROOT(w *rbytes.WBuffer) (int, error) {
 	if w.Err() != nil {
 		return 0, w.Err()
@@ -575,130 +565,6 @@ func (b *tbranch) UnmarshalROOT(r *rbytes.RBuffer) error {
 	return r.Err()
 }
 
-func (b *tbranch) loadEntry(ientry int64) error {
-	var err error
-
-	if len(b.basketBytes) == 0 {
-		return nil
-	}
-
-	err = b.loadBasket(ientry)
-	if err != nil {
-		return err
-	}
-	b.firstEntry = b.ctx.first
-
-	jentry := ientry - b.ctx.first
-	switch len(b.leaves) {
-	case 1:
-		err = b.ctx.bk.loadLeaf(jentry, b.leaves[0])
-		if err != nil {
-			return err
-		}
-	default:
-		for _, leaf := range b.leaves {
-			err = b.ctx.bk.loadLeaf(jentry, leaf)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func (b *tbranch) loadBasket(entry int64) error {
-	ib := b.findBasketIndex(entry)
-	if ib < 0 {
-		return fmt.Errorf("rtree: no basket for entry %d", entry)
-	}
-	var (
-		err   error
-		bufsz = int(b.basketBytes[ib])
-		seek  = b.basketSeek[ib]
-		f     = b.tree.getFile()
-	)
-	b.ctx.id = ib
-	b.ctx.entry = entry
-	b.ctx.next = b.basketEntry[ib+1]
-	b.ctx.first = b.basketEntry[ib]
-	if ib < len(b.baskets) {
-		b.ctx.bk = &b.baskets[ib]
-		if b.ctx.bk.rbuf == nil {
-			err = b.ctx.inflate(bufsz, seek, f)
-			if err != nil {
-				return fmt.Errorf("rtree: could not inflate basket: %w", err)
-			}
-
-			return b.setupBasket(&b.ctx, entry)
-		}
-		return nil
-	}
-
-	b.baskets = append(b.baskets, Basket{})
-	b.ctx.bk = &b.baskets[len(b.baskets)-1]
-	err = b.ctx.inflate(bufsz, seek, f)
-	if err != nil {
-		return fmt.Errorf("rtree: could not inflate basket: %w", err)
-	}
-	return b.setupBasket(&b.ctx, entry)
-}
-
-func (b *tbranch) findBasketIndex(entry int64) int {
-	switch {
-	case entry == 0:
-		return 0
-	case b.ctx.first <= entry && entry < b.ctx.next:
-		return b.ctx.id
-	}
-	/*
-		    // binary search is not efficient for small slices (like basketEntry)
-			// TODO(sbinet): test at which length of basketEntry it starts to be efficient.
-			entries := b.basketEntry[1:]
-			i := sort.Search(len(entries), func(i int) bool { return entries[i] >= entry })
-			if b.basketEntry[i+1] == entry {
-				return i + 1
-			}
-			return i
-	*/
-
-	for i := b.ctx.id; i < len(b.basketEntry); i++ {
-		v := b.basketEntry[i]
-		if v > entry && v > 0 {
-			return i - 1
-		}
-	}
-	if entry == b.basketEntry[len(b.basketEntry)-1] {
-		return -2 // len(b.basketEntry) - 1
-	}
-	return -1
-}
-
-func (b *tbranch) setupBasket(ctx *basketCtx, entry int64) error {
-	ib := ctx.id
-	switch ctx.keylen {
-	case 0: // FIXME(sbinet): from trial and error. check this is ok for all cases
-		b.basketEntry[ib] = 0
-		b.basketEntry[ib+1] = int64(ctx.bk.nevbuf)
-
-	default:
-		if b.entryOffsetLen <= 0 {
-			return nil
-		}
-
-		last := int64(ctx.bk.last)
-		ctx.bk.rbuf.SetPos(last)
-		n := int(ctx.bk.rbuf.ReadI32())
-		ctx.bk.offsets = rbytes.ResizeI32(ctx.bk.offsets, n)
-		ctx.bk.rbuf.ReadArrayI32(ctx.bk.offsets)
-		if err := ctx.bk.rbuf.Err(); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (b *tbranch) scan(ptr interface{}) error {
 	if b.ctx.bk == nil {
 		if len(b.basketBytes) == 0 {
@@ -1007,18 +873,6 @@ func (b *tbranchElement) UnmarshalROOT(r *rbytes.RBuffer) error {
 
 	r.CheckByteCount(pos, bcnt, beg, b.Class())
 	return r.Err()
-}
-
-func (b *tbranchElement) loadEntry(ientry int64) error {
-	if len(b.branches) > 0 {
-		for _, sub := range b.branches {
-			err := sub.loadEntry(ientry)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return b.tbranch.loadEntry(ientry)
 }
 
 func (b *tbranchElement) setAddress(ptr interface{}) error {
