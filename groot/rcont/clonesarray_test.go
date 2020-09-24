@@ -67,6 +67,20 @@ func TestTClonesArrayRW(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
+	cmp := func(got, want *rcont.ClonesArray) bool {
+		if g, w := got.Len(), want.Len(); g != w {
+			return false
+		}
+		if g, w := got.Last(), want.Last(); g != w {
+			return false
+		}
+		for i := 0; i < got.Len(); i++ {
+			if g, w := got.At(i), want.At(i); !reflect.DeepEqual(g, w) {
+				return false
+			}
+		}
+		return true
+	}
 
 	for i, tc := range []struct {
 		name string
@@ -84,20 +98,20 @@ func TestTClonesArrayRW(t *testing.T) {
 				})
 				return o
 			}(),
-			cmp: func(got, want *rcont.ClonesArray) bool {
-				if g, w := got.Len(), want.Len(); g != w {
-					return false
-				}
-				if g, w := got.Last(), want.Last(); g != w {
-					return false
-				}
-				for i := 0; i < got.Len(); i++ {
-					if g, w := got.At(i), want.At(i); !reflect.DeepEqual(g, w) {
-						return false
-					}
-				}
-				return true
-			},
+			cmp: cmp,
+		},
+		{
+			name: "TClonesArray-Of",
+			want: func() *rcont.ClonesArray {
+				o := rcont.NewClonesArrayOf("TObjString")
+				o.SetElems([]root.Object{
+					rbase.NewObjString("Elem-0"),
+					rbase.NewObjString("elem-1"),
+					rbase.NewObjString("Elem-20"),
+				})
+				return o
+			}(),
+			cmp: cmp,
 		},
 	} {
 		fname := filepath.Join(dir, fmt.Sprintf("tclonesarray-%d.root", i))

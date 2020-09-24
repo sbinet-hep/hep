@@ -20,11 +20,19 @@ import (
 type ClonesArray struct {
 	arr ObjArray
 	cls string
+
+	rstreamer rbytes.RStreamer
+	wstreamer rbytes.WStreamer
 }
 
 func NewClonesArray() *ClonesArray {
+	return NewClonesArrayOf("")
+}
+
+func NewClonesArrayOf(class string) *ClonesArray {
 	arr := &ClonesArray{
 		arr: *NewObjArray(),
+		cls: class,
 	}
 	arr.BypassStreamer(false)
 	arr.arr.obj.SetBits(rbytes.CannotHandleMemberWiseStreaming)
@@ -131,6 +139,34 @@ func (arr *ClonesArray) MarshalROOT(w *rbytes.WBuffer) (int, error) {
 
 	switch {
 	case arr.CanBypassStreamer():
+		if arr.wstreamer == nil {
+			si, err := w.StreamerInfo(arr.cls, -1)
+			if err != nil {
+				return 0, fmt.Errorf(
+					"rcont: could not locate streamer for %q: %w",
+					arr.cls, err,
+				)
+			}
+			ww, err := si.NewWStreamer(rbytes.MemberWise)
+			if err != nil {
+				err = fmt.Errorf(
+					"rcont: could not create decoder for TClonesArray's %q: %w",
+					arr.cls, err,
+				)
+				w.SetErr(err)
+				return 0, err
+			}
+			err = ww.(rbytes.Binder).Bind(&arr.arr.objs)
+			if err != nil {
+				err = fmt.Errorf(
+					"rcont: could not bind TClonesArray's array of %q to read-streamer: %w",
+					arr.cls, err,
+				)
+				w.SetErr(err)
+				return 0, err
+			}
+			arr.wstreamer = ww
+		}
 		panic("rcont: writing TClonesArray with streamer by-pass not implemented")
 	default:
 		for i, obj := range arr.arr.objs {
@@ -202,7 +238,48 @@ func (arr *ClonesArray) UnmarshalROOT(r *rbytes.RBuffer) error {
 			obj := fct().Interface().(root.Object)
 			arr.arr.objs[i] = obj
 		}
-		panic("rcont: TClonesArray with BypassStreamer not supported")
+		if arr.rstreamer == nil {
+			si, err := r.StreamerInfo(arr.cls, clv)
+			if err != nil {
+				err = fmt.Errorf(
+					"rcont: could not locate TClonesArray's streamer for (%q,vers=%d): %w",
+					arr.cls, clv, err,
+				)
+				r.SetErr(err)
+				return err
+			}
+			rr, err := si.NewRStreamer(rbytes.MemberWise)
+			if err != nil {
+				err = fmt.Errorf(
+					"rcont: could not create decoder for TClonesArray's %q: %w",
+					arr.cls, err,
+				)
+				r.SetErr(err)
+				return err
+			}
+			err = rr.(rbytes.Binder).Bind(&arr.arr.objs)
+			if err != nil {
+				err = fmt.Errorf(
+					"rcont: could not bind TClonesArray's array of %q to read-streamer: %w",
+					arr.cls, err,
+				)
+				r.SetErr(err)
+				return err
+			}
+			arr.rstreamer = rr
+		}
+
+		err = arr.rstreamer.RStreamROOT(r)
+		if err != nil {
+			err = fmt.Errorf(
+				"rcont: could not decode TClonesArray's %q: %w",
+				arr.cls, err,
+			)
+			r.SetErr(err)
+			return err
+		}
+		panic("rcont: reading TClonesArray with streamer by-pass not implemented")
+
 	default:
 		for i := range arr.arr.objs {
 			nch := r.ReadI8()
