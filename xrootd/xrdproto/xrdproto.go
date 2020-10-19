@@ -64,6 +64,8 @@ const (
 	// OkSoFar indicates that server provides partial response and client should be prepared
 	// to receive additional responses on same stream.
 	OkSoFar ResponseStatus = 4000
+	// Attn indicates that the client must take immediate action.
+	Attn ResponseStatus = 4001
 	// Error indicates that an error occurred during request handling.
 	// Error code and error message are sent as part of response (see xrootd protocol specification v3.1.0, p. 27).
 	Error ResponseStatus = 4003
@@ -71,6 +73,8 @@ const (
 	Redirect ResponseStatus = 4004
 	// Wait indicates that the client must wait the indicated number of seconds and retry the request.
 	Wait ResponseStatus = 4005
+	// WaitResp indicates that the client must wait the indicated number of seconds and retry the request.
+	WaitResp ResponseStatus = 4006
 )
 
 // WaitResponse is the response indicating that the client must wait and retry the request.
@@ -88,6 +92,69 @@ func (o WaitResponse) MarshalXrd(wBuffer *xrdenc.WBuffer) error {
 // UnmarshalXrd implements Unmarshaler.
 func (o *WaitResponse) UnmarshalXrd(rBuffer *xrdenc.RBuffer) error {
 	o.Duration = time.Second * time.Duration(rBuffer.ReadI32())
+	return nil
+}
+
+// Action is the action code indicating how an Attn response should be handled.
+type Action uint32
+
+const (
+	// AsyncAbort indicates the client should immediately disconnect and abort
+	// further execution
+	AsyncAbort Action = 5000
+
+	// AsyncDisconnect indicates the client should immediately disconnect.
+	// The parameters indicate when a reconnect may be attempted.
+	AsyncDisconnect Action = 5001
+
+	// AsyncMessage indicates the client should send the indicated message to
+	// the console.
+	// The parameters contain the message text.
+	AsyncMessage Action = 5002
+
+	// AsyncReconnect indicates the client should immediately disconnect and
+	// reconnect to the indicated server.
+	AsyncReconnect Action = 5003
+
+	// AsyncHoldOff indicates the client should hold off sending any new requests
+	// until the indicated amount of time has passed, or until an AsyncGo action
+	// code is received.
+	AsyncHoldOff Action = 5004
+
+	// AsyncAvailable indicates the client the previously requested file(s)
+	// are now available.
+	AsyncAvailable Action = 5005
+
+	// AsyncUnavailable indicates the client the previously requested file(s)
+	// could not be made available.
+	AsyncUnavailable Action = 5006
+
+	// AsyncGo indicates the client may start sending requests.
+	// This action code is sent to cancel the effects of a previous AsyncHoldOff
+	// action code.
+	AsyncGo Action = 5007
+
+	// AsyncResp indicates the client should use the response data in the message
+	// to complete the request associated with the indicated stream ID.
+	AsyncResp Action = 5008
+)
+
+type AttnResponse struct {
+	Action Action
+	Data   []byte
+}
+
+// MarshalXrd implements Marshaler.
+func (o AttnResponse) MarshalXrd(w *xrdenc.WBuffer) error {
+	w.WriteI32(int32(o.Action))
+	w.WriteBytes(o.Data)
+	return nil
+}
+
+// UnmarshalXrd implements Unmarshaler.
+func (o *AttnResponse) UnmarshalXrd(r *xrdenc.RBuffer) error {
+	o.Action = Action(r.ReadI32())
+	o.Data = r.Bytes()
 	return nil
 }
 

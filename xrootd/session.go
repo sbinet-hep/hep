@@ -7,6 +7,7 @@ package xrootd // import "go-hep.org/x/hep/xrootd"
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"sync"
@@ -218,10 +219,50 @@ func (sess *cliSession) handleWaitResponse(streamID xrdproto.StreamID, data []by
 	return nil
 }
 
+// handleAttnResponse handles a "kXR_attn" response.
+// See http://xrootd.org/doc/dev45/XRdv310.pdf, p. 15 for the specification of the response.
+func (sess *cliSession) handleAttnResponse(streamID xrdproto.StreamID, srv *mux.ServerResponse) error {
+	var (
+		resp xrdproto.AttnResponse
+		r    = xrdenc.NewRBuffer(srv.Data)
+	)
+	if err := resp.UnmarshalXrd(r); err != nil {
+		return err
+	}
+
+	//	sess.mu.RLock()
+	//	req, ok := sess.requests[streamID]
+	//	sess.mu.RUnlock()
+	//	if !ok {
+	//		return fmt.Errorf("xrootd: could not find a request with stream id equal to %v", streamID)
+	//	}
+
+	switch resp.Action {
+	case xrdproto.AsyncAbort:
+	case xrdproto.AsyncDisconnect:
+	case xrdproto.AsyncMessage:
+	case xrdproto.AsyncReconnect:
+	case xrdproto.AsyncHoldOff:
+	case xrdproto.AsyncAvailable:
+	case xrdproto.AsyncUnavailable:
+	case xrdproto.AsyncGo:
+	case xrdproto.AsyncResp:
+		log.Printf(">>> sid:  %v", streamID)
+		log.Printf(">>> resp: %q", resp.Data)
+		srv.Data = resp.Data
+	default:
+		return fmt.Errorf("xrootd: unknown Attn action code %d", resp.Action)
+	}
+
+	return nil
+}
+
 func (sess *cliSession) consume() {
-	var header xrdproto.ResponseHeader
-	var headerBytes = make([]byte, xrdproto.ResponseHeaderLength)
-	var resp mux.ServerResponse
+	var (
+		header      xrdproto.ResponseHeader
+		headerBytes = make([]byte, xrdproto.ResponseHeaderLength)
+		resp        mux.ServerResponse
+	)
 
 	for {
 		select {
@@ -229,9 +270,11 @@ func (sess *cliSession) consume() {
 			// TODO: Should wait for active requests to be completed?
 			return
 		default:
+			log.Printf("read-response...")
 			var err error
 			resp.Data, err = xrdproto.ReadResponseWithReuse(sess.conn, headerBytes, &header)
 			if err != nil {
+				log.Printf("read-response... err: %+v", err)
 				if sess.ctx.Err() != nil {
 					// something happened to the context.
 					// ignore this error.
@@ -242,11 +285,30 @@ func (sess *cliSession) consume() {
 			resp.Err = nil
 			resp.Redirection = nil
 
+			log.Printf("read-response... status: %v", header.Status)
 			switch header.Status {
+			case xrdproto.Ok:
+				log.Printf("read-response... status-ok: %q", resp.Data)
 			case xrdproto.Error:
 				resp.Err = header.Error(resp.Data)
+			case xrdproto.Attn:
+				log.Printf("read-response... status-attn")
+				resp.Err = sess.handleAttnResponse(header.StreamID, &resp)
+				log.Printf("read-response... status-attn - err: %+v", resp.Err)
+			//	if resp.Err == nil {
+			//		continue
+			//	}
 			case xrdproto.Wait:
+				log.Printf("read-response... status-wait")
 				resp.Err = sess.handleWaitResponse(header.StreamID, resp.Data)
+				log.Printf("read-response... status-wait - err: %+v", resp.Err)
+				if resp.Err == nil {
+					continue
+				}
+			case xrdproto.WaitResp:
+				log.Printf("read-response... status-waitresp")
+				resp.Err = sess.handleWaitResponse(header.StreamID, resp.Data)
+				log.Printf("read-response... status-waitresp - err: %+v", resp.Err)
 				if resp.Err == nil {
 					continue
 				}
