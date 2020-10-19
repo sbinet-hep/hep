@@ -265,6 +265,16 @@ func flattenArrayType(rt reflect.Type) (reflect.Type, []int) {
 	panic("impossible")
 }
 
+func doSplit(lvl int, cfg wopt) bool {
+	switch {
+	case lvl < int(cfg.splitlvl):
+		return true
+	case cfg.splitlvl < 0:
+		return false
+	}
+	return false
+}
+
 var (
 	_ Tree        = (*wtree)(nil)
 	_ Writer      = (*wtree)(nil)

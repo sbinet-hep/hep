@@ -840,6 +840,17 @@ func newBranchElementFromWVar(w *wtree, base *tbranch, wvar WriteVar, parent Bra
 	if err != nil {
 		return nil, err
 	}
+	if doSplit(lvl, cfg) && false {
+		wvars := WriteVarsFromStruct(rv.Interface())
+		for _, wvar := range wvars {
+			sub, err := newBranchFromWVar(w, wvar.Name, wvar, b, lvl+1, cfg)
+			if err != nil {
+				return nil, fmt.Errorf("rtree: could not create sub-branch for write-var %#v: %w", wvar, err)
+			}
+			b.branches = append(b.branches, sub)
+		}
+	}
+
 	b.named.SetTitle(wvar.Name)
 	b.createNewBasket()
 	return b, nil
