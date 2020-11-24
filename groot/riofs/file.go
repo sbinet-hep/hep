@@ -9,8 +9,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"os"
+	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -274,8 +277,70 @@ func (f *File) ReadAt(p []byte, off int64) (int, error) {
 	return f.r.ReadAt(p, off)
 }
 
+type stackMon struct {
+	blks []block
+}
+
+type block struct {
+	beg, end int64
+	stk      string
+}
+
+func (stk *stackMon) add(beg, end int64, stck string) {
+	stk.blks = append(stk.blks, block{
+		beg: beg,
+		end: end,
+		stk: stck,
+	})
+}
+
+func (stk *stackMon) analyze() {
+	if len(stk.blks) < 1 {
+		return
+	}
+
+	sort.Slice(stk.blks, func(i, j int) bool {
+		bi := stk.blks[i]
+		bj := stk.blks[j]
+		if bi.beg == bj.beg {
+			return bi.end < bj.end
+		}
+		return bi.beg < bj.end
+	})
+
+	f, err := os.Create("over.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	n := 0
+	for i := range stk.blks[:len(stk.blks)-1] {
+		bi := stk.blks[i]
+		bj := stk.blks[i+1]
+		if bi.end <= bj.beg {
+			// no overlap
+			continue
+		}
+		if bi.beg == bj.beg && bi.end == bj.end {
+			// exact overlap
+			continue
+		}
+		n++
+		fmt.Fprintf(f, "=== overlap ===\n")
+		fmt.Fprintf(f, "- [%d, %d]\n%s\n", bi.beg, bi.end, bi.stk)
+		fmt.Fprintf(f, "- [%d, %d]\n%s\n", bj.beg, bj.end, bj.stk)
+	}
+	fmt.Fprintf(f, "overlaps: %d\n", n)
+}
+
+var gmon stackMon
+
 // WriteAt implements io.WriterAt
 func (f *File) WriteAt(p []byte, off int64) (int, error) {
+	buf := make([]byte, 32*1024)
+	n := runtime.Stack(buf, false)
+	gmon.add(off, off+int64(len(p)), string(buf[:n]))
 	return f.w.WriteAt(p, off)
 }
 
@@ -416,7 +481,7 @@ func (f *File) writeHeader() error {
 	}
 
 	_, _ = f.w.WriteAt(make([]byte, f.begin), 0)
-	_, err = f.w.WriteAt(buf.Bytes(), 0)
+	_, err = f.WriteAt(buf.Bytes(), 0)
 	if err != nil {
 		return fmt.Errorf("riofs: could not write file header: %w", err)
 	}
@@ -431,6 +496,8 @@ func (f *File) writeHeader() error {
 // Close closes the File, rendering it unusable for I/O.
 // It returns an error, if any.
 func (f *File) Close() error {
+	gmon.analyze()
+
 	if f.closer == nil {
 		return nil
 	}

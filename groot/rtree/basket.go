@@ -7,6 +7,7 @@ package rtree
 import (
 	"fmt"
 	"io"
+	"log"
 	"reflect"
 
 	"go-hep.org/x/hep/groot/rbytes"
@@ -232,12 +233,14 @@ func (b *Basket) UnmarshalROOT(r *rbytes.RBuffer) error {
 		}
 	}
 
+	bufsz := 0
 	if flag == 1 || flag > 10 {
 		// reading raw data
 		var sz = int32(b.last)
 		if vers <= 1 {
 			sz = r.ReadI32()
 		}
+		bufsz = int(sz)
 		buf := make([]byte, int(sz))
 		_, err := io.ReadFull(r, buf)
 		if err != nil {
@@ -246,6 +249,13 @@ func (b *Basket) UnmarshalROOT(r *rbytes.RBuffer) error {
 		}
 		b.key.SetBuffer(buf)
 	}
+
+	log.Printf(
+		"bkt[% 15s] cycle=%d, seek=%d nevbuf=%d, last=%d, flag=%d, must-gen=%v, offsets=%d, bufsz=%d",
+		b.Name(), b.key.Cycle(), b.key.SeekKey(),
+		b.nevbuf, b.last, flag, mustGenOffsets,
+		len(b.offsets), bufsz,
+	)
 
 	return r.Err()
 }
@@ -348,6 +358,8 @@ func (b *Basket) writeFile(f *riofs.File) (totBytes int64, zipBytes int64, err e
 	if err != nil {
 		return int64(n), int64(n), err
 	}
+
+	b.key.TestPos()
 	b.wbuf = nil
 	b.key.SetBuffer(nil)
 

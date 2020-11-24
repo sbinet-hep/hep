@@ -7,6 +7,7 @@ package riofs
 import (
 	"fmt"
 	"io"
+	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -369,7 +370,7 @@ func (k *Key) Object() (root.Object, error) {
 
 	err = vv.UnmarshalROOT(rbytes.NewRBuffer(buf, nil, uint32(k.keylen), k.f))
 	if err != nil {
-		return nil, fmt.Errorf("riofs: could not unmarshal key payload: %w", err)
+		return nil, fmt.Errorf("riofs: could not unmarshal key payload (seek=%d, keylen=%d, nbytes=%d, buf=%d): %w", k.seekkey, k.keylen, k.nbytes, len(buf), err)
 	}
 
 	if vv, ok := obj.(SetFiler); ok {
@@ -577,18 +578,51 @@ func (k *Key) writeFile(f *File) (int, error) {
 		return 0, err
 	}
 
-	n, err := f.w.WriteAt(buf.Bytes(), k.seekkey)
+	n, err := f.WriteAt(buf.Bytes(), k.seekkey)
 	if err != nil {
 		return n, err
 	}
-	nn, err := f.w.WriteAt(k.buf, k.seekkey+int64(k.keylen))
+	nn, err := f.WriteAt(k.buf, k.seekkey+int64(k.keylen))
 	n += nn
 	if err != nil {
 		return n, err
 	}
 
+	k.TestPos()
 	k.buf = nil
 	return n, nil
+}
+
+func (k *Key) TestPos() {
+	if false || true {
+		return
+	}
+	if (k.seekkey > kStartBigFile && (k.cycle < 10 || k.cycle > 13430)) ||
+		k.seekkey < 500 ||
+		k.class == "TTree" {
+		var isBig = k.f.end > kStartBigFile
+		if k.parent != nil {
+			switch d := k.parent.(type) {
+			case *File:
+				isBig = d.end > kStartBigFile
+			case *tdirectoryFile:
+				isBig = d.isBigFile()
+			}
+		}
+		log.Printf(
+			"key[%s] cycle=%d, key-len=%d seek-key=%d, len=%d is-big=(dir=%v, file=%v) dir=%v|%d|%T [%s]",
+			k.name, k.cycle,
+			k.keylen,
+			k.seekkey,
+			k.nbytes,
+			isBig, k.isBigFile(),
+			k.parent.(root.Named).Name(),
+			k.seekpdir,
+			k.parent,
+			k.class,
+		)
+	}
+
 }
 
 func (k *Key) records(w io.Writer, indent int) error {

@@ -6,6 +6,7 @@ package rtree
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
@@ -427,9 +428,11 @@ func (b *tbranch) UnmarshalROOT(r *rbytes.RBuffer) error {
 			if err := baskets.UnmarshalROOT(r); err != nil {
 				return err
 			}
+			log.Printf("bch[% 15s]: last=%d, max=%d", b.Name(), baskets.Last()+1, b.maxBaskets)
 
 			b.baskets = make([]Basket, baskets.Last()+1)
 			for i := range b.baskets {
+				log.Printf("brh[% 15s]: bkt=%d/%d", b.Name(), i+1, len(b.baskets))
 				bkt := baskets.At(i)
 				// FIXME(sbinet) check why some are nil
 				if bkt == nil {

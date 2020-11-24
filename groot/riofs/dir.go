@@ -347,7 +347,7 @@ func (dir *tdirectoryFile) writeHeader() error {
 		return fmt.Errorf("riofs: could not marshal dir-info: %w", err)
 	}
 
-	_, err = dir.file.w.WriteAt(buf.Bytes(), dir.seekdir+int64(dir.nbytesname))
+	_, err = dir.file.WriteAt(buf.Bytes(), dir.seekdir+int64(dir.nbytesname))
 	if err != nil {
 		return fmt.Errorf("riofs: could not write dir-info to file: %w", err)
 	}
