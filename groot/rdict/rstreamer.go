@@ -125,7 +125,7 @@ var (
 func (si *StreamerInfo) makeROp(sictx rbytes.StreamerInfoContext, i int, descr elemDescr) rstreamer {
 	cfg := &streamerConfig{si, i, &descr, descr.offset, 0, nil}
 	switch descr.otype {
-	case rmeta.Base:
+	case rmeta.Base, -1:
 		var (
 			se       = descr.elem.(*StreamerBase)
 			typename = se.Name()

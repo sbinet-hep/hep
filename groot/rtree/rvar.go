@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"go-hep.org/x/hep/groot/rcont"
 	"go-hep.org/x/hep/groot/root"
 )
 
@@ -30,14 +31,27 @@ func NewReadVars(t Tree) []ReadVar {
 	for _, b := range t.Branches() {
 		for _, leaf := range b.Leaves() {
 			ptr := newValue(leaf)
+			log.Printf("leaf[%s]: %T count=%v", leaf.Name(), leaf, leaf.LeafCount() != nil)
+			bname := b.Name()
+			lname := leaf.Name()
+			if l, ok := leaf.(*tleafElement); ok && strings.HasSuffix(lname, "_") {
+				b := l.branch.(*tbranchElement)
+				log.Printf("->b= bcount1=%v, clones=%q", b.bcount1, b.clones)
+				ptr = rcont.NewClonesArrayOf(b.clones)
+			}
 			cnt := ""
 			if leaf.LeafCount() != nil {
 				cnt = leaf.LeafCount().Name()
 			}
-			vars = append(vars, ReadVar{Name: b.Name(), Leaf: leaf.Name(), Value: ptr, count: cnt, leaf: leaf})
+			vars = append(vars, ReadVar{
+				Name:  bname,
+				Leaf:  lname,
+				Value: ptr,
+				count: cnt,
+				leaf:  leaf,
+			})
 		}
 	}
-
 	return vars
 }
 
@@ -142,34 +156,54 @@ func nameOf(field reflect.StructField) string {
 }
 
 func bindRVarsTo(t Tree, rvars []ReadVar) []ReadVar {
-	ors := make([]ReadVar, 0, len(rvars))
-	var flatten func(b Branch, rvar ReadVar) []ReadVar
+	var (
+		ors    = make([]ReadVar, 0, len(rvars))
+		counts []ReadVar
+
+		flatten func(b Branch, rvar ReadVar) []ReadVar
+	)
+
 	flatten = func(br Branch, rvar ReadVar) []ReadVar {
 		nsub := len(br.Branches())
 		subs := make([]ReadVar, 0, nsub)
+		log.Printf(">>> flatten(%q, %q)... nsub=%d", br.Name(), rvar.Name, nsub)
 		rv := reflect.ValueOf(rvar.Value).Elem()
 		get := func(name string) int {
 			rt := rv.Type()
-			for i := 0; i < rt.NumField(); i++ {
-				ft := rt.Field(i)
-				nn := nameOf(ft)
-				if nn == name {
-					// exact match.
-					return i
+			switch rt.Kind() {
+			case reflect.Struct:
+				for i := 0; i < rt.NumField(); i++ {
+					ft := rt.Field(i)
+					nn := nameOf(ft)
+					if nn == name {
+						// exact match.
+						return i
+					}
+					// try to remove any [xyz][range].
+					// do it after exact match not to shortcut arrays
+					if idx := strings.Index(nn, "["); idx > 0 {
+						nn = string(nn[:idx])
+					}
+					if nn == name {
+						return i
+					}
 				}
-				// try to remove any [xyz][range].
-				// do it after exact match not to shortcut arrays
-				if idx := strings.Index(nn, "["); idx > 0 {
-					nn = string(nn[:idx])
+			case reflect.Map:
+				log.Printf("get-map(%s)...", name)
+				switch name {
+				case "first": // C++ std::map<K,V> -> K
+					return 0
+				case "second": // C++ std::map<K,V> -> V
+					return 1
 				}
-				if nn == name {
-					return i
-				}
+			default:
+				panic(fmt.Errorf("rtree: unhandled reflect kind=%v", rt.Kind()))
 			}
 			return -1
 		}
 
 		for _, sub := range br.Branches() {
+			log.Printf("sub[%s.%s]...", br.Name(), sub.Name())
 			bn := sub.Name()
 			if strings.Contains(bn, ".") {
 				toks := strings.Split(bn, ".")
@@ -179,9 +213,11 @@ func bindRVarsTo(t Tree, rvars []ReadVar) []ReadVar {
 			if j < 0 {
 				continue
 			}
-			fv := rv.Field(j)
-			bname := sub.Name()
-			lname := sub.Name()
+			var (
+				subrv ReadVar
+				bname = sub.Name()
+				lname = sub.Name()
+			)
 			if prefix := br.Name() + "."; strings.HasPrefix(bname, prefix) {
 				bname = string(bname[len(prefix):])
 			}
@@ -191,19 +227,73 @@ func bindRVarsTo(t Tree, rvars []ReadVar) []ReadVar {
 			if idx := strings.Index(lname, "["); idx > 0 {
 				lname = string(lname[:idx])
 			}
-			leaf := sub.Leaf(lname)
-			count := ""
+
+			var (
+				leaf  = sub.Leaf(lname)
+				count = ""
+			)
 			if leaf != nil {
 				if lc := leaf.LeafCount(); lc != nil {
 					count = lc.Name()
 				}
 			}
-			subrv := ReadVar{
-				Name:  rvar.Name + "." + bname,
-				Leaf:  lname,
-				Value: fv.Addr().Interface(),
-				leaf:  leaf,
-				count: count,
+			switch rv.Kind() {
+			case reflect.Struct:
+				fv := rv.Field(j)
+				subrv = ReadVar{
+					Name:  rvar.Name + "." + bname,
+					Leaf:  lname,
+					Value: fv.Addr().Interface(),
+					leaf:  leaf,
+					count: count,
+				}
+				if count != "" && count == rvar.Name+"_" {
+					// add count leaf.
+					counts = append(counts, ReadVar{
+						Name:  rvar.Name + ".count__groot",
+						Leaf:  count,
+						Value: reflect.New(leaf.LeafCount().Type()).Interface(),
+						leaf:  t.Leaf(count),
+					})
+				}
+
+			case reflect.Map:
+				var (
+					kt reflect.Type
+					rt = rv.Type()
+				)
+				switch {
+				case strings.HasSuffix(bname, "first"):
+					rt = rt.Key()
+					kt = rt
+				case strings.HasSuffix(bname, "second"):
+					rt = rt.Elem()
+				}
+
+				log.Printf("sub: %T, name=%q, rvar=%q --> %q (count=%q, %v)",
+					rv.Interface(), sub.Name(), rvar.Name, rvar.Name+"."+bname,
+					count, kt,
+				)
+				subrv = ReadVar{
+					Name:  rvar.Name + "." + bname,
+					Leaf:  lname,
+					Value: reflect.New(rt).Interface(),
+					leaf:  leaf,
+					count: count,
+				}
+
+				if kt != nil && count != "" {
+					// add count leaf.
+					counts = append(counts, ReadVar{
+						Name:  rvar.Name + ".count",
+						Leaf:  count,
+						Value: reflect.New(leaf.LeafCount().Type()).Interface(),
+						leaf:  t.Leaf(count),
+					})
+				}
+
+			default:
+				panic(fmt.Errorf("rtree: unhandled reflect kind=%v", rv.Kind()))
 			}
 			switch len(sub.Branches()) {
 			case 0:
@@ -229,6 +319,15 @@ func bindRVarsTo(t Tree, rvars []ReadVar) []ReadVar {
 		default:
 			ors = append(ors, flatten(br, *rvar)...)
 		}
+	}
+
+	log.Printf("tree[%s] leaves=%d", t.Name(), len(t.Leaves()))
+	for i, leaf := range t.Leaves() {
+		log.Printf("leaf[%d]: %q (%T)", i, leaf.Name(), leaf)
+	}
+
+	if len(counts) > 0 {
+		ors = append(counts, ors...)
 	}
 	return ors
 }

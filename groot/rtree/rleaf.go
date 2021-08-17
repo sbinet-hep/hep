@@ -257,7 +257,14 @@ func (leaf *rleafElem) bindCount() {
 	case *uint64:
 		leaf.n = func() int { return int(*v) }
 	default:
-		panic(fmt.Errorf("invalid leaf-elem type: %T", v))
+		switch rv := reflect.ValueOf(leaf.v).Elem(); rv.Kind() {
+		case reflect.Map:
+			leaf.n = func() int { return rv.Len() }
+		case reflect.Slice:
+			leaf.n = rv.Len
+		default:
+			panic(fmt.Errorf("invalid leaf-elem[%s] type: %T", leaf.Leaf().Name(), v))
+		}
 	}
 }
 
