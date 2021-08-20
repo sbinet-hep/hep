@@ -581,6 +581,24 @@ func (w *WBuffer) WriteStaticArrayI32(v []int32) {
 	}
 }
 
+func write[T any](w *WBuffer, v T) {
+	switch (interface{})(v).(type) {
+	case int8:
+	default:
+		panic("boo")
+	}
+}
+
+func WriteArray[T any](w *WBuffer, v []T) {
+	if w.err != nil {
+		return
+	}
+	w.w.grow(len(v))
+	for _, v := range v {
+		write[T](w, v)
+	}
+}
+
 func (w *WBuffer) WriteFastArrayBool(v []bool) {
 	if w.err != nil {
 		return

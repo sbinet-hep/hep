@@ -8,6 +8,15 @@ import (
 	"go-hep.org/x/hep/groot/root"
 )
 
+func Resize[T any](sli []T, n int) []T {
+	if m := cap(sli); m < n {
+		sli = sli[:m]
+		sli = append(sli, make([]T, n-m)...)
+	}
+	sli = sli[:n]
+	return sli
+}
+
 func ResizeBool(sli []bool, n int) []bool {
 	if m := cap(sli); m < n {
 		sli = sli[:m]

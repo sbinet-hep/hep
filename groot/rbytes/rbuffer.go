@@ -371,6 +371,36 @@ func (r *RBuffer) ReadStaticArrayI32() []int32 {
 	return arr
 }
 
+func ReadArray[T any](r *RBuffer, arr []T) {
+	if r.err != nil {
+		return
+	}
+	n := len(arr)
+	if n <= 0 || int64(n) > r.Len() {
+		return
+	}
+
+	for i := range arr {
+		arr[i] = read[T](r)
+	}
+}
+
+func read[T any](r *RBuffer) T {
+	var v T
+	switch (interface{})(v).(type) {
+	//	case int8:
+	//		return r.readI8()
+	//	case int16:
+	//		return r.ReadI16()
+	//	case int32:
+	//		return r.ReadI32()
+	//	case int64:
+	//		return r.ReadI64()
+	default:
+		panic("boo")
+	}
+}
+
 func (r *RBuffer) ReadArrayBool(arr []bool) {
 	if r.err != nil {
 		return
