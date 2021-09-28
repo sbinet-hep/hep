@@ -3,7 +3,7 @@ module go-hep.org/x/hep
 go 1.16
 
 require (
-	gioui.org v0.0.0-20210309172710-4b377aa89637
+	gioui.org v0.0.0-20210925100615-41f3a7e74ee6
 	github.com/apache/arrow/go/arrow v0.0.0-20201119084055-60ea0dcac5a8
 	github.com/astrogo/fitsio v0.2.1
 	github.com/campoy/embedmd v1.0.0
@@ -23,7 +23,7 @@ require (
 	github.com/ulikunitz/xz v0.5.10
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-	golang.org/x/exp v0.0.0-20210220032938-85be41e4509f
+	golang.org/x/exp v0.0.0-20210722180016-6781d3edade3
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/tools v0.1.7
