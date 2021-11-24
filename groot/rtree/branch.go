@@ -59,6 +59,39 @@ type tbranch struct {
 	dir  riofs.Directory // directory where this branch's buffers are stored
 }
 
+func newBranchEmpty(w *wtree, name string, parent Branch, lvl int, cfg wopt) Branch {
+	base := &tbranch{
+		named:    *rbase.NewNamed(name, ""),
+		attfill:  *rbase.NewAttFill(),
+		compress: int(cfg.compress),
+
+		iobits:      w.ttree.iobits,
+		basketSize:  int(cfg.bufsize),
+		maxBaskets:  defaultMaxBaskets,
+		basketBytes: make([]int32, 0, defaultMaxBaskets),
+		basketEntry: make([]int64, 1, defaultMaxBaskets),
+		basketSeek:  make([]int64, 0, defaultMaxBaskets),
+
+		tree: &w.ttree,
+		btop: btopOf(parent),
+		bup:  parent,
+		dir:  w.dir,
+	}
+
+	var (
+		b Branch = base
+
+		title = new(strings.Builder)
+	)
+
+	title.WriteString(name)
+
+	base.named.SetTitle(title.String())
+	base.createNewBasket()
+
+	return b
+}
+
 func newBranchFromWVar(w *wtree, name string, wvar WriteVar, parent Branch, lvl int, cfg wopt) (Branch, error) {
 	base := &tbranch{
 		named:    *rbase.NewNamed(name, ""),

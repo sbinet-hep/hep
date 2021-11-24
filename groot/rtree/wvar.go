@@ -6,6 +6,7 @@ package rtree
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -16,6 +17,8 @@ type WriteVar struct {
 	Name  string      // name of the variable
 	Value interface{} // pointer to the value to write
 	Count string      // name of the branch holding the count-leaf value for slices
+
+	path []string
 }
 
 // WriteVarsFromStruct creates a slice of WriteVars from the ptr value.
@@ -29,6 +32,10 @@ func WriteVarsFromStruct(ptr interface{}, opts ...WriteOption) []WriteVar {
 		_ = opt(&cfg)
 	}
 
+	return newWriteVars(ptr, 1, cfg, nil)
+}
+
+func newWriteVars(ptr interface{}, lvl int, cfg wopt, path []string) []WriteVar {
 	rv := reflect.ValueOf(ptr)
 	if rv.Kind() != reflect.Ptr {
 		panic(fmt.Errorf("rtree: expect a pointer value, got %T", ptr))
@@ -88,6 +95,9 @@ func WriteVarsFromStruct(ptr interface{}, opts ...WriteOption) []WriteVar {
 			Name:  ft.Tag.Get("groot"),
 			Value: fv.Addr().Interface(),
 		}
+		if len(path) != 0 {
+			wvar.path = append(wvar.path, path...)
+		}
 		if wvar.Name == "" {
 			wvar.Name = ft.Name
 		}
@@ -110,6 +120,19 @@ func WriteVarsFromStruct(ptr interface{}, opts ...WriteOption) []WriteVar {
 				wvar.Name = arr
 			default:
 				panic(fmt.Errorf("rtree: invalid field type for %q, or invalid struct-tag %q: %T", ft.Name, wvar.Name, fv.Interface()))
+			}
+		}
+		if ft.Type.Kind() == reflect.Struct {
+			log.Printf("name=%q -> lvl=%d, cfg=%d", ft.Name, lvl, cfg.splitlvl)
+			switch {
+			case lvl < int(cfg.splitlvl):
+				sub := make([]string, len(path)+1)
+				copy(sub, path)
+				sub[len(path)] = wvar.Name
+				wvars = append(wvars, newWriteVars(fv.Addr().Interface(), lvl+1, cfg, sub)...)
+				continue
+			default:
+				// ok.
 			}
 		}
 		switch ft.Type.Kind() {

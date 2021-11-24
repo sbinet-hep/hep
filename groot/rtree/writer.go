@@ -6,6 +6,7 @@ package rtree
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 
 	"go-hep.org/x/hep/groot/internal/rcompress"
@@ -151,8 +152,30 @@ func NewWriter(dir riofs.Directory, name string, vars []WriteVar, opts ...WriteO
 
 	w.ttree.named.SetTitle(cfg.title)
 
+	type brancher interface {
+		Name() string
+		Branch(name string) Branch
+	}
+
 	for _, v := range vars {
-		b, err := newBranchFromWVar(w, v.Name, v, nil, 0, cfg)
+		var parent Branch
+		if len(v.path) > 0 {
+			var cur brancher = &w.ttree
+			for lvl, name := range v.path {
+				log.Printf("~~~> %q", name)
+				mom := cur.Branch(name)
+				if mom == nil {
+					br := newBranchEmpty(w, name, nil, lvl+1, cfg)
+					w.ttree.branches = append(w.ttree.branches, br)
+					mom = br
+				}
+				cur = mom
+			}
+			parent = cur.(Branch)
+			log.Printf("parent: %q", parent.Name())
+		}
+
+		b, err := newBranchFromWVar(w, v.Name, v, parent, 0, cfg)
 		if err != nil {
 			return nil, fmt.Errorf("rtree: could not create branch for write-var %#v: %w", v, err)
 		}
