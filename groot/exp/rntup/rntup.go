@@ -12,6 +12,7 @@ import (
 	"go-hep.org/x/hep/groot/rbytes"
 	"go-hep.org/x/hep/groot/root"
 	"go-hep.org/x/hep/groot/rtypes"
+	"go-hep.org/x/hep/groot/rvers"
 )
 
 type span struct {
@@ -35,7 +36,7 @@ func (*NTuple) Class() string {
 }
 
 func (*NTuple) RVersion() int16 {
-	return 0 // FIXME(sbinet): generate through gen.rboot
+	return rvers.ROOT_Experimental_RNTuple
 }
 
 func (nt *NTuple) String() string {
