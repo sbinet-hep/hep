@@ -6,23 +6,23 @@ package rntup
 
 // Page is a slice of a column that is mapped into memory.
 type Page struct {
-	col  int // Column id
+	col  int64 // Column id
 	buf  []byte
-	cap  int
-	esz  int // element size in bytes
-	nelm int // number of elements
+	esz  int64 // element size in bytes
+	nelm int64 // number of elements
+	cap  int64 // capacity of the page in number of elements
 
-	rng     int
+	rng     uint64
 	cluster ClusterInfo
 }
 
-func (p *Page) Contains(idx int) bool {
-	return idx >= p.rng && idx < p.rng+p.nelm
+func (p *Page) Contains(idx uint64) bool {
+	return p.rng <= idx && idx < p.rng+uint64(p.nelm)
 }
 
 type ClusterInfo struct {
-	id   int // cluster number.
-	ioff int // first element index of the column in this cluster.
+	id   uint64 // cluster number.
+	ioff uint64 // first element index of the column in this cluster.
 }
 
 type ColumnHandle struct {

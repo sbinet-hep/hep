@@ -5,106 +5,195 @@
 // Package rntup contains types to handle RNTuple-related data.
 package rntup // import "go-hep.org/x/hep/groot/exp/rntup"
 
-import (
-	"fmt"
-	"reflect"
+type fieldFlag uint16
 
-	"go-hep.org/x/hep/groot/rbytes"
-	"go-hep.org/x/hep/groot/root"
-	"go-hep.org/x/hep/groot/rtypes"
-	"go-hep.org/x/hep/groot/rvers"
+const (
+	fieldFlagRepetitive fieldFlag = 0x01 // Repetitive field, i.e. for every entry n copies of the field are stored
+	fieldFlagAlias      fieldFlag = 0x02 // Alias field, the columns referring to this field are alias columns
+)
+
+type fieldRole uint16
+
+const (
+	fieldRoleLeaf       fieldRole = 0x00 // Leaf field in the schema tree
+	fieldRoleCollection fieldRole = 0x01 // The field is the mother of a collection (e.g., a vector)
+	fieldRoleRecord     fieldRole = 0x02 // The field is the mother of a record (e.g., a struct)
+	fieldRoleUnion      fieldRole = 0x03 // The field is the mother of a variant (e.g., a union)
+	fieldRoleReference  fieldRole = 0x04 // The field is a reference (pointer), TODO
 )
 
 type span struct {
-	seek   uint64
-	nbytes uint32
-	length uint32
+	seek   uint64 // file offset of the span, excluding TKey part
+	nbytes uint32 // size of compressed span
+	length uint32 // size of uncompressed span
 }
 
-type NTuple struct {
-	rvers uint32
-	size  uint32
+// type envelope struct {
+// 	vers  uint16
+// 	minv  uint16
+// 	crc32 uint32
+// }
 
-	header span
-	footer span
+type header struct {
+	vers uint16
+	minv uint16
 
-	reserved uint64
+	flags   []uint64
+	release uint32
+	name    string
+	descr   string
+	library string
+
+	fields  []fieldDescr
+	cols    []colDescr
+	aliases []colAlias
+	extra   []colExtra
+
+	crc32 uint32
 }
 
-func (*NTuple) Class() string {
-	return "ROOT::Experimental::RNTuple"
+type footer struct {
+	vers uint16
+	minv uint16
+
+	flags []uint64
+	hdr   uint32
+
+	xhdrs     []extHeader
+	colGroups []colGroup
+	clInfos   []clusterInfo
+	clGroups  []clusterGroup
+	mdBlocks  []metaDataBlock
+
+	crc32 uint32
 }
 
-func (*NTuple) RVersion() int16 {
-	return rvers.ROOT_Experimental_RNTuple
+type pageList struct {
+	vers uint16
+	minv uint16
+
+	clusters []clusterDescr
+
+	crc32 uint32
 }
 
-func (nt *NTuple) String() string {
-	return fmt.Sprintf("NTuple{version:%d, size:%d, header:%v, footer:%v}",
-		nt.rvers, nt.size, nt.header, nt.footer,
-	)
+type frame struct {
+	size uint32
+	n    uint32
 }
 
-func (nt *NTuple) MarshalROOT(w *rbytes.WBuffer) (int, error) {
-	if w.Err() != nil {
-		return 0, w.Err()
-	}
+type fieldDescr struct {
+	vers uint32 // field version
+	typv uint32 // type version
+	pfid uint32 // parent field ID
+	role fieldRole
+	flag fieldFlag
+	nrep uint64
 
-	hdr := w.WriteHeader(nt.Class(), nt.RVersion())
-
-	w.WriteU32(nt.rvers)
-	w.WriteU32(nt.size)
-
-	w.WriteU64(nt.header.seek)
-	w.WriteU32(nt.header.nbytes)
-	w.WriteU32(nt.header.length)
-
-	w.WriteU64(nt.footer.seek)
-	w.WriteU32(nt.footer.nbytes)
-	w.WriteU32(nt.footer.length)
-
-	w.WriteU64(nt.reserved)
-
-	return w.SetHeader(hdr)
+	fname string // field name
+	tname string // type name
+	alias string // type alias
+	descr string // field description
 }
 
-func (nt *NTuple) UnmarshalROOT(r *rbytes.RBuffer) error {
-	if r.Err() != nil {
-		return r.Err()
-	}
+type colKind uint16
 
-	hdr := r.ReadHeader(nt.Class())
+const (
+	colIndex64 colKind = 0x01 // Mother columns of (nested) collections, counting is relative to the cluster
+	colIndex32 colKind = 0x02 // Mother columns of (nested) collections, counting is relative to the cluster
+	colSwitch  colKind = 0x03 // Lower 44 bits like kIndex64, higher 20 bits are a dispatch tag to a column ID
+	colByte    colKind = 0x04 // An uninterpreted byte, e.g. part of a blob
+	colChar    colKind = 0x05 // ASCII character
+	colBit     colKind = 0x06 // Boolean value
+	colReal64  colKind = 0x07 // IEEE-754 double precision float
+	colReal32  colKind = 0x08 // IEEE-754 single precision float
+	colReal16  colKind = 0x09 // IEEE-754 half precision float
+	colInt64   colKind = 0x0A // Two's complement, little-endian 8 byte integer
+	colInt32   colKind = 0x0B // Two's complement, little-endian 4 byte integer
+	colInt16   colKind = 0x0C // Two's complement, little-endian 2 byte integer
+	colInt8    colKind = 0x0D // Two's complement, 1 byte integer
 
-	nt.rvers = r.ReadU32()
-	nt.size = r.ReadU32()
-
-	nt.header.seek = r.ReadU64()
-	nt.header.nbytes = r.ReadU32()
-	nt.header.length = r.ReadU32()
-
-	nt.footer.seek = r.ReadU64()
-	nt.footer.nbytes = r.ReadU32()
-	nt.footer.length = r.ReadU32()
-
-	nt.reserved = r.ReadU64()
-
-	r.CheckHeader(hdr)
-	return r.Err()
-}
-
-func init() {
-	{
-		f := func() reflect.Value {
-			o := &NTuple{}
-			return reflect.ValueOf(o)
-		}
-		rtypes.Factory.Add("ROOT::Experimental::RNTuple", f)
-	}
-}
-
-var (
-	_ root.Object        = (*NTuple)(nil)
-	_ rbytes.RVersioner  = (*NTuple)(nil)
-	_ rbytes.Marshaler   = (*NTuple)(nil)
-	_ rbytes.Unmarshaler = (*NTuple)(nil)
+	colSplitIndex64 colKind = 0x0E // Like Index64 but pages are stored in split + delta encoding
+	colSplitIndex32 colKind = 0x0F // Like Index32 but pages are stored in split + delta encoding
+	colSplitReal64  colKind = 0x10 // Like Real64 but pages are stored in split encoding
+	colSplitReal32  colKind = 0x11 // Like Real32 but pages are stored in split encoding
+	colSplitReal16  colKind = 0x12 // Like Real16 but pages are stored in split encoding
+	colSplitInt64   colKind = 0x13 // Like Int64 but pages are stored in split encoding
+	colSplitInt32   colKind = 0x14 // Like Int32 but pages are stored in split encoding
+	colSplitInt16   colKind = 0x15 // Like Int16 but pages are stored in split encoding
 )
+
+type colFlag uint32
+
+const (
+	colSortedIncr  colFlag = 0x01 // Elements in the column are sorted (monotonically increasing)
+	colSortedDecr  colFlag = 0x02 // Elements in the column are sorted (monotonically decreasing)
+	colNonNegative colFlag = 0x04 // Elements have only non-negative values
+)
+
+type colDescr struct {
+	kind    colKind
+	bits    uint16
+	fieldID uint32
+	flags   colFlag
+}
+
+type colAlias struct {
+	physID  uint32 // physical column ID
+	fieldID uint32 // field that needs to have the "alias field" flag set
+}
+
+type colExtra struct {
+	typeFrom  uint32
+	typeTo    uint32
+	contentID uint32
+	typeName  string
+}
+
+type extHeader struct {
+	// TODO
+}
+
+type colGroup struct {
+	// TODO
+}
+
+type clusterInfo struct {
+	firstEntry uint64
+	nentries   uint64
+	colGrpID   int32 // -1 for "all columns"
+}
+
+type clusterGroup struct {
+	n     uint32
+	pages envelopeLink
+}
+
+type metaDataBlock struct {
+}
+
+type envelopeLink struct {
+	size uint32 // unzipped size
+	loc  locator
+}
+
+type locator struct {
+	pos     uint64
+	storage uint32
+	url     string
+}
+
+type clusterDescr struct {
+	columns []columnDescr
+}
+
+type columnDescr struct {
+	pages  []pageDescr
+	offset uint64
+	compr  uint32
+}
+
+type pageDescr struct {
+	nelem uint32
+	loc   locator
+}
