@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	"go-hep.org/x/hep/groot"
+	"go-hep.org/x/hep/groot/exp/rntup"
 	"go-hep.org/x/hep/groot/rdict"
 	"go-hep.org/x/hep/groot/rhist"
 	"go-hep.org/x/hep/groot/riofs"
@@ -81,6 +82,9 @@ func (cmd *dumpCmd) dumpObj(obj root.Object) error {
 	case rtree.Tree:
 		fmt.Fprintf(cmd.w, "\n")
 		err = cmd.dumpTree(obj)
+	case *rntup.NTuple:
+		fmt.Fprintf(cmd.w, "\n")
+		err = cmd.dumpNtuple(obj)
 	case riofs.Directory:
 		fmt.Fprintf(cmd.w, "\n")
 		err = cmd.dumpDir(obj)
@@ -177,6 +181,12 @@ func (cmd *dumpCmd) dumpTree(t rtree.Tree) error {
 	if err != nil {
 		return fmt.Errorf("rcmd: could not read through tree: %w", err)
 	}
+	return nil
+}
+
+func (cmd *dumpCmd) dumpNtuple(nt *rntup.NTuple) error {
+	// TODO(sbinet)
+	fmt.Fprintf(cmd.w, "%+v\n", nt)
 	return nil
 }
 
