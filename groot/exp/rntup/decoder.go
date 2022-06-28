@@ -8,6 +8,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+
+	"go-hep.org/x/hep/groot/exp/rntup/rnttypes"
 )
 
 type decoder struct {
@@ -147,9 +149,9 @@ func (dec *decoder) decodeFields() (fields []fieldDescr) {
 		f.vers = dec.u32()
 		f.typv = dec.u32()
 		f.pfid = dec.u32()
-		f.role = fieldRole(dec.u16())
-		f.flag = fieldFlag(dec.u16())
-		if f.flag&fieldFlagRepetitive != 0 {
+		f.role = rnttypes.FieldRole(dec.u16())
+		f.flag = rnttypes.FieldFlag(dec.u16())
+		if f.flag&rnttypes.FlagRepetitive != 0 {
 			f.nrep = dec.u64()
 		}
 		f.fname = dec.decodeString()
@@ -177,10 +179,10 @@ func (dec *decoder) decodeCols() (cols []colDescr) {
 		csz, cnel := dec.decodeFrameHeader()
 		log.Printf("col[%d]: %d, %d", i, csz, cnel)
 		col := &cols[i]
-		col.kind = colKind(dec.u16())
+		col.kind = rnttypes.Kind(dec.u16())
 		col.bits = dec.u16()
 		col.fieldID = dec.u32()
-		col.flags = colFlag(dec.u32())
+		col.flags = rnttypes.ColumnFlag(dec.u32())
 		log.Printf("col[%d]: %+v", i, col)
 	}
 
