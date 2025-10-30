@@ -320,6 +320,106 @@ func TestReaderStruct(t *testing.T) {
 	}
 }
 
+func TestReaderWithBufferEvent(t *testing.T) {
+	type Event struct {
+		B      bool        `groot:"B"`
+		Str    string      `groot:"Str"`
+		I8     int8        `groot:"I8"`
+		I16    int16       `groot:"I16"`
+		I32    int32       `groot:"I32"`
+		I64    int64       `groot:"I64"`
+		U8     uint8       `groot:"U8"`
+		U16    uint16      `groot:"U16"`
+		U32    uint32      `groot:"U32"`
+		U64    uint64      `groot:"U64"`
+		F32    float32     `groot:"F32"`
+		F64    float64     `groot:"F64"`
+		ArrBs  [10]bool    `groot:"ArrBs[10]"`
+		ArrI8  [10]int8    `groot:"ArrI8[10]"`
+		ArrI16 [10]int16   `groot:"ArrI16[10]"`
+		ArrI32 [10]int32   `groot:"ArrI32[10]"`
+		ArrI64 [10]int64   `groot:"ArrI64[10]"`
+		ArrU8  [10]uint8   `groot:"ArrU8[10]"`
+		ArrU16 [10]uint16  `groot:"ArrU16[10]"`
+		ArrU32 [10]uint32  `groot:"ArrU32[10]"`
+		ArrU64 [10]uint64  `groot:"ArrU64[10]"`
+		ArrF32 [10]float32 `groot:"ArrF32[10]"`
+		ArrF64 [10]float64 `groot:"ArrF64[10]"`
+	}
+	wantEvent := func(i int64) (evt Event) {
+		evt.B = i%2 == 0
+		evt.Str = fmt.Sprintf("str-%d", i)
+		evt.I8 = int8(-i)
+		evt.I16 = int16(-i)
+		evt.I32 = int32(-i)
+		evt.I64 = int64(-i)
+		evt.U8 = uint8(i)
+		evt.U16 = uint16(i)
+		evt.U32 = uint32(i)
+		evt.U64 = uint64(i)
+		evt.F32 = float32(i)
+		evt.F64 = float64(i)
+		for ii := range evt.ArrI32 {
+			evt.ArrBs[ii] = ii == int(i)
+			evt.ArrI8[ii] = int8(-i)
+			evt.ArrI16[ii] = int16(-i)
+			evt.ArrI32[ii] = int32(-i)
+			evt.ArrI64[ii] = int64(-i)
+			evt.ArrU8[ii] = uint8(i)
+			evt.ArrU16[ii] = uint16(i)
+			evt.ArrU32[ii] = uint32(i)
+			evt.ArrU64[ii] = uint64(i)
+			evt.ArrF32[ii] = float32(i)
+			evt.ArrF64[ii] = float64(i)
+		}
+		return evt
+	}
+
+	files := []string{
+		"../testdata/x-flat-bufevt.root",
+	}
+	for i := range files {
+		fname := files[i]
+		t.Run(fname, func(t *testing.T) {
+			t.Parallel()
+
+			f, err := riofs.Open(fname)
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+			defer f.Close()
+
+			obj, err := f.Get("tree")
+			if err != nil {
+				t.Fatal(err)
+			}
+			tree := obj.(Tree)
+
+			var (
+				want = wantEvent
+				data Event
+			)
+			r, err := NewReader(tree, []ReadVar{{Name: "Event", Value: &data}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer r.Close()
+			err = r.Read(func(ctx RCtx) error {
+				if got, want := data, want(ctx.Entry); !reflect.DeepEqual(got, want) {
+					return fmt.Errorf(
+						"entry[%d]:\ngot= %#v\nwant=%#v\n",
+						ctx.Entry, got, want,
+					)
+				}
+				return nil
+			})
+			if err != nil && err != io.EOF {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
 func TestReaderVars(t *testing.T) {
 	files := []string{
 		"../testdata/x-flat-tree.root",

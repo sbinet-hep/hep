@@ -7,6 +7,8 @@ package rtree
 import (
 	"fmt"
 	"io"
+	"reflect"
+	"strings"
 
 	"go-hep.org/x/hep/groot/rtree/rfunc"
 )
@@ -196,12 +198,14 @@ func (r *Reader) Formula(f rfunc.Formula) (rfunc.Formula, error) {
 }
 
 func sanitizeRVars(t Tree, rvars []ReadVar) ([]ReadVar, error) {
+	rvs := make([]ReadVar, 0, len(rvars))
 	for i := range rvars {
 		rvar := &rvars[i]
 		if rvar.Leaf == "" {
 			rvar.Leaf = rvar.Name
 		}
 		if rvar.count != "" {
+			rvs = append(rvs, *rvar)
 			continue
 		}
 		br := t.Branch(rvar.Name)
@@ -209,15 +213,31 @@ func sanitizeRVars(t Tree, rvars []ReadVar) ([]ReadVar, error) {
 			return nil, fmt.Errorf("rtree: tree %q has no branch named %q", t.Name(), rvar.Name)
 		}
 		leaf := br.Leaf(rvar.Leaf)
-		if leaf == nil {
-			continue
-		}
-		lfc := leaf.LeafCount()
-		if lfc != nil {
-			rvar.count = lfc.Name()
+		switch {
+		case leaf == nil:
+			kind := reflect.ValueOf(rvar.Value).Elem().Kind()
+			switch {
+			case kind == reflect.Struct && strings.Contains(br.Title(), ":"):
+				// maybe a branch with a contiguous buffer of bytes.
+				subs := ReadVarsFromStruct(rvar.Value)
+				for i := range subs {
+					sub := &subs[i]
+					sub.Name = rvar.Name
+					sub.leaf = br.Leaf(sub.Leaf)
+				}
+				rvs = append(rvs, subs...)
+			default:
+				rvs = append(rvs, *rvar)
+			}
+		default:
+			lfc := leaf.LeafCount()
+			if lfc != nil {
+				rvar.count = lfc.Name()
+			}
+			rvs = append(rvs, *rvar)
 		}
 	}
-	return rvars, nil
+	return rvs, nil
 }
 
 type reader interface {
