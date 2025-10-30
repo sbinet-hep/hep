@@ -27,7 +27,7 @@ func main() {
 	var (
 		module  = flag.String("module", "go-hep.org/x/hep", "module name to publish")
 		version = flag.String("version", "latest", "module version to publish")
-		repo    = flag.String("repo", "git@github.com:go-hep/hep", "VCS URL of repository")
+		repo    = flag.String("repo", "git@codeberg.org:go-hep/hep", "VCS URL of repository")
 	)
 
 	flag.Parse()
